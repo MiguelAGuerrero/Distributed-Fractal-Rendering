@@ -12,7 +12,9 @@ class Client:
         _make_server_socket()
         
     def _maker_server_socket(self):
-        pass
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((HOST, PORT))
+        self.socket.listen(16)
         
     def connect(self):
         pass
@@ -23,9 +25,15 @@ class ConnectionManager(threading.Thread):
         self.connections = []
         
     def accept_connection(self):
-        pass
-    
-    
+        conn, addr = self.socket.accept()
+        self.accept_connection(conn)
+        
+    def add_connection(self, conn):
+        self.connections.append(conn)
+        
+    def remove_connection(self, conn):
+        self.connections.remove(conn)
+        
 def main(args):
     port = int(args[1])
     c = Client(args[0], port)
