@@ -33,7 +33,6 @@ class Client:
     def can_render_fractal_img(self):
         if self.data is None:
             return False
-        print("Data Length:", len(self.data))
         return len(self.data) == self.img_width * self.img_height or len(self.data) == self.img_width
 
     def display(self):
@@ -49,14 +48,12 @@ class Client:
                 params = [-2, 1, #xmin, xmax
                           -1, 1, #ymin, ymax
                           self.img_width, self.img_height, self.maxiter, i * vertical_partition, (i + 1) * vertical_partition] #SPLIT WORK: xmin, xmax, ymin, ymax
-                print("Submitting work to", conn_id, ":", params)
                 conn, worker = workers[conn_id]
                 worker.submit_work(params)
 
             while not self.can_render_fractal_img():
                 continue
 
-            print("Displaying")
             self.display()
 
         else:
@@ -88,7 +85,6 @@ class ConnectionManager(threading.Thread):
         done = False
         while not done:
             conn_id, worker = self.accept_connection()
-            print("Connection established: ", conn_id, worker)
 
     def get_workers(self):
         return self.workers
