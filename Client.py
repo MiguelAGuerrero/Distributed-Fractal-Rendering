@@ -96,8 +96,7 @@ class ConnectionManager(threading.Thread):
 def main(args):
     port = int(args[1])
     c = Client(args[0], port)
-    while not c.manager.get_workers():
-        continue
+    input("press any key to continue")
     c.render()
 
 if __name__ == "__main__":
