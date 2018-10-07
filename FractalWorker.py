@@ -1,6 +1,18 @@
 from MandelZoom import mandelbrot_set2
 import sys
 import Worker
+import time
+
+times = []
+def timeit(f):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = f(*args, **kw)
+        te = time.time()
+        print ('func:%r args:[%r, %r] took: %2.4f sec' % \
+          (f.__name__, args, kw, te-ts))
+        return result
+    return times.append(timed)
 
 
 class FractalWorker(Worker.Worker):
@@ -10,7 +22,7 @@ class FractalWorker(Worker.Worker):
 
     def validate_data(self, data):
         return data
-    
+
     def run(self):
         self.connect()
         done = False;
@@ -22,9 +34,13 @@ class FractalWorker(Worker.Worker):
                 self.write(results)
                 done = True
 
-
     def compute(self, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
-        return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
+        t1 = time.time()
+        x = mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
+        t2 = time.time()
+        with open('mandelbrot_display_time.txt', 'a') as f:
+            f.write('\nMandelbrot Computation took '+str(t2 -t1)+' Seconds.\n')
+        return x
 
 if __name__ == '__main__':
     FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))

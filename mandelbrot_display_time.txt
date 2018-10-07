@@ -1,0 +1,2 @@
+Mandelbrot Computation took 0.651273250579834 Seconds.
+Mandelbrot Computation took 0.6193709373474121 Seconds.

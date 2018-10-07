@@ -16,7 +16,7 @@ class Client:
         self.img_width = 1000;
         self.img_height = 3 * self.img_width // 4;
         self.maxiter = 256
-
+        self.time_log = []
     def _make_server_socket(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.bind((self.address, self.port))
@@ -33,6 +33,7 @@ class Client:
         if self.data is None:
             return False
         return len(self.data) == self.img_width * self.img_height or len(self.data) == self.img_width
+
 
     def display(self):
         mandelbrot_image(self.data, xmin=-2, xmax=1, ymin=-1, ymax=1)
@@ -93,6 +94,7 @@ def main(args):
     c = Client(args[0], port)
     input("press any key to continue")
     c.render()
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
