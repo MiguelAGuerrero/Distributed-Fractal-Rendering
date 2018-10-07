@@ -1,6 +1,5 @@
 import threading
 import socket
-import pickle
 import sys
 from ClientWorker import ClientWorker
 from MandelZoom import mandelbrot_image
@@ -71,7 +70,7 @@ class ConnectionManager(threading.Thread):
         self.ids = self.ids + 1
         conn, addr = self.socket.accept()
         worker = ClientWorker(self.client, conn)
-
+        print('Connected to Worker: ', worker)
         self._add_connection(self.ids, (conn, worker))
         return conn, worker
 

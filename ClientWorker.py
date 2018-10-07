@@ -1,6 +1,7 @@
 import Worker
 import numpy
 class ClientWorker(Worker.Worker):
+
     def __init__(self, client, socket):
         super().__init__(None, None)
         self.client = client

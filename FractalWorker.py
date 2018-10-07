@@ -1,4 +1,3 @@
-
 from MandelZoom import mandelbrot_set2
 import sys
 import Worker
@@ -26,9 +25,6 @@ class FractalWorker(Worker.Worker):
 
     def compute(self, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
         return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
-        
-def main(args):
-    w = FractalWorker(address='127.0.0.1', port=1000)
 
 if __name__ == '__main__':
-    main(sys.argv[1:])
+    FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))
