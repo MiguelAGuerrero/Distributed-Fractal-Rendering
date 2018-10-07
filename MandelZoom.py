@@ -1,9 +1,9 @@
-from numba import jit, vectorize, guvectorize, float64, complex64, int32, float32
+#from numba import jit, vectorize, guvectorize, float64, complex64, int32, float32
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-@jit(int32(complex64, int32))
+#@jit(int32(complex64, int32))
 def mandelbrot(c, maxiter):
     nreal = 0
     real = 0
@@ -17,7 +17,7 @@ def mandelbrot(c, maxiter):
     return 0
 
 
-@guvectorize([(complex64[:], int32[:], int32[:])], '(n),()->(n)', target='parallel')
+#@guvectorize([(complex64[:], int32[:], int32[:])], '(n),()->(n)', target='parallel')
 def mandelbrot_numpy(c, maxit, output):
     maxiter = maxit[0]
     for i in range(c.shape[0]):
