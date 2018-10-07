@@ -1,9 +1,9 @@
-#from numba import jit, vectorize, guvectorize, float64, complex64, int32, float32
+from numba import jit, vectorize, guvectorize, float64, complex64, int32, float32
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-#@jit(int32(complex64, int32))
+@jit
 def mandelbrot(c, maxiter):
     nreal = 0
     real = 0
@@ -23,7 +23,7 @@ def mandelbrot_numpy(c, maxit, output):
     for i in range(c.shape[0]):
         output[i] = mandelbrot(c[i], maxiter)
 
-
+@jit
 def mandelbrot_set2(xmin, xmax, ymin, ymax, width, height, maxiter, begin, end):
     r1 = np.linspace(xmin, xmax, width, dtype=np.float32)
     r2 = np.linspace(ymin, ymax, height, dtype=np.float32)
@@ -37,6 +37,7 @@ def mandelbrot_set2(xmin, xmax, ymin, ymax, width, height, maxiter, begin, end):
 
     return data.T
 
+
 def mandelbrot_image2(xmin, xmax, ymin, ymax, width=10, height=10, \
                      maxiter=256, cmap='jet', gamma=0.3):
     dpi = 72
@@ -45,17 +46,17 @@ def mandelbrot_image2(xmin, xmax, ymin, ymax, width=10, height=10, \
     z = mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, maxiter)
 
     fig, ax = plt.subplots(figsize=(width, height), dpi=72)
-    ticks = np.arange(0, img_width, 3 * dpi)
-    x_ticks = xmin + (xmax - xmin) * ticks / img_width
-    plt.xticks(ticks, x_ticks)
-    y_ticks = ymin + (ymax - ymin) * ticks / img_width
-    plt.yticks(ticks, y_ticks)
-    ax.set_title(cmap)
+    # ticks = np.arange(0, img_width, 3 * dpi)
+    # x_ticks = xmin + (xmax - xmin) * ticks / img_width
+    # plt.xticks(ticks, x_ticks)
+    # y_ticks = ymin + (ymax - ymin) * ticks / img_width
+    # plt.yticks(ticks, y_ticks)
+    # ax.set_title(cmap)
 
     norm = colors.PowerNorm(gamma)
     ax.imshow(z.T, cmap=cmap, origin='lower', norm=norm)
     plt.show()
-
+@jit
 def mandelbrot_image(data, xmin, xmax, ymin, ymax, width=10, height=10, \
                      maxiter=256, cmap='jet', gamma=0.3):
     dpi = 72
@@ -64,12 +65,12 @@ def mandelbrot_image(data, xmin, xmax, ymin, ymax, width=10, height=10, \
     z = data
 
     fig, ax = plt.subplots(figsize=(width, height), dpi=72)
-    ticks = np.arange(0, img_width, 3 * dpi)
-    x_ticks = xmin + (xmax - xmin) * ticks / img_width
-    plt.xticks(ticks, x_ticks)
-    y_ticks = ymin + (ymax - ymin) * ticks / img_height
-    plt.yticks(ticks, y_ticks)
-    ax.set_title(cmap)
+    # ticks = np.arange(0, img_width, 3 * dpi)
+    # x_ticks = xmin + (xmax - xmin) * ticks / img_width
+    # plt.xticks(ticks, x_ticks)
+    # y_ticks = ymin + (ymax - ymin) * ticks / img_height
+    # plt.yticks(ticks, y_ticks)
+    # ax.set_title(cmap)
 
     norm = colors.PowerNorm(gamma)
     ax.imshow(data.T, cmap=cmap, origin='lower', norm=norm)
