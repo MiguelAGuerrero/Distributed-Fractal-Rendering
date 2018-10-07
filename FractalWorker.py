@@ -1,7 +1,5 @@
-import threading
+
 from MandelZoom import mandelbrot_set2
-from socket import socket, SOCK_STREAM, AF_INET, SOL_SOCKET,SO_REUSEADDR, timeout
-import pickle
 import sys
 import Worker
 
@@ -22,7 +20,6 @@ class FractalWorker(Worker.Worker):
             params = self.read()
             if params:
                 results = self.compute(*params)
-                print("Got results:", type(results))
                 self.write(results)
                 done = True
 
