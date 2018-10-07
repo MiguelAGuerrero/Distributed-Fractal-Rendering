@@ -10,39 +10,47 @@ class Worker(ABC, threading.Thread):
         super().__init__()
         self.address = address
         self.port = port
-        self.start()
 
     def connect(self):
         self.sock = socket(AF_INET, SOCK_STREAM)
         addr = self.address, self.port
-        self.sock.settimeout(50)
+        self.sock.settimeout(1)
         try:
             self.sock.connect(addr)
         except Exception as e:
             print(e)
     
     def read(self):
+        data = []
         try:
-            data = self.sock.recv(4096)
-            if not validate_data(data):
-                return None
-            data_arr = pickle.loads(data)
-            return data_arr
+            while True:
+                packet = self.sock.recv(1024)
+                if not packet:
+                    break
+                data.append(packet)
         except Exception as e:
-            print(e)
-        
+            pass
+
+        if not data:
+            return []
+
+        data_arr = pickle.loads(b''.join(data))
+        print(self.__class__.__name__, "Unloaded:", data_arr)
+
+        return data_arr
+
     def write(self, data):
         data_string = pickle.dumps(data)
-        self.sock.send(data)
-    
+        self.sock.send(data_string)
+
     @abstractmethod
     def validate_data(self, data):
         pass
-    
-    @abstractmethod        
-    def start(self):
+
+    @abstractmethod
+    def run(self):
         pass
-            
+
     def close(self):
         self.sock.close()
         
