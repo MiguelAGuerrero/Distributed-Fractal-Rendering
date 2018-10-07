@@ -25,7 +25,6 @@ class ClientWorker(Worker.Worker):
             if self.work_status:
                 data = self.read()
                 if type(data) is numpy.ndarray and data.any():
-                    print("Sending to client:", data)
                     self.client.receive(data)
                     self.work_status = False
                 elif type(data) is list and not data:
