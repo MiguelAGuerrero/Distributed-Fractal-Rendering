@@ -35,12 +35,7 @@ class FractalWorker(Worker.Worker):
                 done = True
 
     def compute(self, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
-        t1 = time.time()
-        x = mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
-        t2 = time.time()
-        with open('mandelbrot_display_time.txt', 'a') as f:
-            f.write('\nMandelbrot Computation took '+str(t2 -t1)+' Seconds.\n')
-        return x
+        return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
 
 if __name__ == '__main__':
     FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))
