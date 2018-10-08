@@ -23,19 +23,15 @@ def mandelbrot(c, maxiter):
 #     for i in range(c.shape[0]):
 #         output[i] = mandelbrot(c[i], maxiter)
 
-@guvectorize(['int64,int64,int64,int64,int64,int64,int64,int64,int64,int64[:,:]'],'(),(),(),(),(),(),(),(),(),(n,n)',target='parallel')
 def mandelbrot_set2(xmin, xmax, ymin, ymax, width, height, maxiter, begin, end, data=None):
     r1 = np.linspace(xmin, xmax, width, dtype=np.float64)
     r2 = np.linspace(ymin, ymax, height, dtype=np.float64)
     c = r1 + r2[:, None] * 1j
-    print(len(c), len(c[0]))
     data = np.zeros((height, width))
-    print(len(data), len(data[0]))
     for i in range(begin, end):
         for j in range(width):
             data[i, j] = mandelbrot(c[i][j], maxiter)
-    print(data.T)
-    return data.T
+    return data
 
 def mandelbrot_image2(xmin, xmax, ymin, ymax, width=10, height=10, \
                      maxiter=256, cmap='jet', gamma=0.3):

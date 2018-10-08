@@ -15,7 +15,8 @@ class ClientWorker(Worker.Worker):
     def get_status(self):
         return self.work_status
 
-    def submit_work(self, params):
+    def submit_work(self, x0, y0, x1, y1, params):
+        self.work_section = (x0, y0, x1, y1)
         self.write(params)
         self.work_status = True
 
@@ -26,8 +27,8 @@ class ClientWorker(Worker.Worker):
             if self.work_status:
                 data = self.read()
                 if type(data) is numpy.ndarray and data.any():
-                    print('Client Worker got data')
-                    self.client.receive(data)
+                    print('Client Worker got data', data.shape)
+                    self.client.canvas.put_pixels(data, self.work_section[0], self.work_section[1])
                     self.work_status = False
                 elif type(data) is list and not data:
                     pass

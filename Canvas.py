@@ -6,13 +6,29 @@ class Canvas(ABC):
         self.height = height
 
     @abstractmethod
-    def putPixels(self, arr):
+    def can_render(self):
         pass
 
     @abstractmethod
-    def getPixels(self):
+    def set_pixels(self, arr):
         pass
 
     @abstractmethod
-    def render(self):
+    def get_pixels(self):
+        pass
+
+    @abstractmethod
+    def put_pixels(self, arr, i, j):
+        pass
+
+    @abstractmethod
+    def put_pixel(self, pixel, i, j):
+        pass
+
+    @abstractmethod
+    def get_pixel(self, pixel, i ,j):
+        pass
+
+    @abstractmethod
+    def render(self, *args, **kwargs):
         pass
