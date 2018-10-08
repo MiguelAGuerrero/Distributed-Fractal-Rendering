@@ -15,7 +15,6 @@ class MessageType(Enum):
     RJCT = auto()
     RSLT = auto()
 
-
 static_msgs = set([MessageType.CONN, MessageType.CLSE, MessageType.AVAL, MessageType.ACPT, MessageType.RJCT])
 dynamic_msgs = set([MessageType.WORK, MessageType.RSLT])
 
@@ -23,7 +22,7 @@ def msg(type, data=None):
     if type in static_msgs:
         return type.value
     elif type in dynamic_msgs:
-        return 
+        return
     else:
         return b""
 

@@ -26,9 +26,8 @@ class ClientWorker(Worker.Worker):
         while not done:
             if self.work_status:
                 data = self.read()
-                if type(data) is numpy.ndarray and data.any():
-                    print('Client Worker got data', data.shape)
-                    print(self.work_section[0], self.work_section[1])
+                if data.__getitem__:
+                    print('Client Worker got data:', data.shape)
                     self.client.canvas.put_pixels(data, self.work_section[1], self.work_section[0])
                     self.work_status = False
                 elif type(data) is list and not data:

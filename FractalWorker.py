@@ -2,6 +2,7 @@ from MandelZoom import mandelbrot_set2
 import sys
 import Worker
 import time
+import fractal
 
 times = []
 def timeit(f):
@@ -35,7 +36,8 @@ class FractalWorker(Worker.Worker):
                 done = True
 
     def compute(self, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
-        return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
+        return fractal.generate_rows("julia", start, end, -1.037 + 0.17j, size=(img_width, img_height))
+        #return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
 
 if __name__ == '__main__':
     FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))

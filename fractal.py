@@ -3,7 +3,7 @@ import pylab, argparse, collections, inspect, functools
 from itertools import takewhile
 import time
 import multiprocessing
-
+import numpy as np
 
 
 Point = collections.namedtuple("Point", ["x", "y"])
@@ -117,26 +117,36 @@ def get_model(model, depth, c):
     return lambda x, y: fractal_eta(0, cqp(x + y * 1j), depth)
   raise ValueError("Fractal not found")
 
-def generate_fractal(model, c=None, size=pair_reader(int)(DEFAULT_SIZE),
+def generate_fractal(model, y0, y1, c=None, size=pair_reader(int)(DEFAULT_SIZE),
                      depth=int(DEFAULT_DEPTH), zoom=float(DEFAULT_ZOOM),
                      center=pair_reader(float)(DEFAULT_CENTER)):
-  """
-  2D Numpy Array with the fractal value for each pixel coordinate.
-  """
-  num_procs = multiprocessing.cpu_count()
-  print('CPU Count:', num_procs)
-  start = time.time()
+    start = time.time()
+    rows = generate_rows(model, y0, y1, c=c, size=size, depth=depth, zoom=zoom, center=center)
 
-  # Create a pool of workers, one for each row
-  pool = multiprocessing.Pool(num_procs)
-  procs = [pool.apply_async(generate_row,
-                            [model, c, size, depth, zoom, center, row])
-           for row in range(size[1])]
+    #Generates the intensities for each pixel
+    img = pylab.array(rows)
+    print('Time taken:', time.time() - start)
+    return img
 
-  # Generates the intensities for each pixel
-  img = pylab.array([row_proc.get() for row_proc in procs])
-  print('Time taken:', time.time() - start)
-  return img
+
+def generate_rows(model, y0, y1, c, size=pair_reader(int)(DEFAULT_SIZE),
+                     depth=int(DEFAULT_DEPTH), zoom=float(DEFAULT_ZOOM),
+                     center=pair_reader(float)(DEFAULT_CENTER)):
+    """
+    2D Numpy Array with the fractal value for each pixel coordinate.
+    """
+    num_procs = multiprocessing.cpu_count()
+    print('CPU Count:', num_procs)
+
+    # Create a pool of workers, one for each row
+    pool = multiprocessing.Pool(num_procs)
+    print("rows to compute:", y1 - y0)
+    procs = [pool.apply_async(generate_row,[model, c, size, depth, zoom, center, row])
+                for row in range(size[1])]
+
+    rows = [row_proc.get() for row_proc in procs]
+    print(type(rows), len(rows), type(rows[0]), len(rows[0]))
+    return np.array(rows)
 
 def generate_row(model, c, size, depth, zoom, center, row):
   """
