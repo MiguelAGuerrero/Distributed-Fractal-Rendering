@@ -37,6 +37,7 @@ class Client:
     def distribute_work(self,workers, f,*args):
         for i, conn_id in enumerate(self.manager.get_workers()):
             sect, params = f(i, len(workers), *args)
+            print(sect)
             conn, worker = workers[conn_id]
             print(params)
             worker.submit_work(*sect, params)
