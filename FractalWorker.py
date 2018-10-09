@@ -18,7 +18,6 @@ def timeit(f):
         return result
     return times.append(timed)
 
-
 class FractalWorker(Worker):
     def __init__(self, address, port, id=None):
         super().__init__(address, port, id=id)
@@ -37,10 +36,13 @@ class FractalWorker(Worker):
         done = False
         while not done:
             params = self.read()
-            if params:
-                results = self.compute(*params)
-                self.write(results)
-                done = True
+            if self.get_status() is not WorkerStatus.FAILED:
+                if params:
+                    results = self.compute(*params)
+                    self.write(results)
+                    done = True
+            else:
+                pass
 
     def compute(self, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
         return fractal.generate_rows("julia", start, end, -1.037 + 0.17j, size=(img_width, img_height))
