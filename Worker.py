@@ -6,29 +6,38 @@ from abc import ABC, abstractmethod
 from enum import Enum
 import sys
 
-class WorkerState(Enum):
+class WorkerStatus(Enum):
     FAILED = -1
     WORKING = 1
     AVAILABLE = 0
-    READY = 2
+    WORK_READY = 2
     DONE = 3
 
 class Worker(ABC, threading.Thread):
-    def __init__(self, address, port):
+    def __init__(self, address, port, id=None):
         super().__init__()
         self.address = address
         self.port = port
-        self.state = WorkerState.AVAILABLE
+        self.status = WorkerStatus.AVAILABLE
+
+        if id:
+            self.id = id
+
+    def __str__(self):
+        return self.__class__.__name__ + str(id)
+
+    def set_status(self, status: WorkerStatus):
+        self.status = status
+
+    def get_status(self):
+        return self.status
 
     def connect(self):
         self.sock = socket(AF_INET, SOCK_STREAM)
         addr = self.address, self.port
         self.sock.settimeout(1)
-        try:
-            self.sock.connect(addr)
-        except Exception as e:
-            print(e)
-    
+        self.sock.connect(addr)
+
     def read(self):
         data = []
         try:
@@ -39,8 +48,10 @@ class Worker(ABC, threading.Thread):
                 data.append(packet)
         except timeout as te:
             pass
+        except WindowsError as we:
+            self.close(WorkerStatus.FAILED, msg=we)
         except Exception as e:
-            self.close(WorkerState.FAILED, msg=e)
+            self.close(WorkerStatus.FAILED, msg=e)
 
         if not data:
             return None
@@ -55,7 +66,7 @@ class Worker(ABC, threading.Thread):
             data_string = pickle.dumps(data)
             self.sock.sendall(data_string)
         except:
-            self.close(WorkerState.FAILED, "write error")
+            self.close(WorkerStatus.FAILED, "write error")
 
     @abstractmethod
     def validate_data(self, data):
@@ -66,7 +77,7 @@ class Worker(ABC, threading.Thread):
         pass
 
     @abstractmethod
-    def close(self, status: WorkerState, msg=None):
+    def close(self, status: WorkerStatus, msg=None):
         pass
 
 if __name__ == '__main__':

@@ -1,10 +1,11 @@
-from Worker import Worker, WorkerState
+from Worker import Worker, WorkerStatus
 import socket
+import numpy as np
 
 class ClientWorker(Worker):
 
-    def __init__(self, client, sock):
-        super().__init__(None, None)
+    def __init__(self, client, sock, id=None):
+        super().__init__(None, None, id=id)
         self.client = client
         self.sock = sock
         self.start()
@@ -12,21 +13,16 @@ class ClientWorker(Worker):
     def validate_data(self, data):
         return data
 
-    def set_status(self, status: WorkerState):
-        self.status = status
-
-    def get_status(self):
-        return self.state
-
     def get_work_submission(self):
         return self.work_section, self.work_params
 
     def submit_work(self, x0, y0, x1, y1, params):
+        self.set_status(WorkerStatus.WORKING)
         self.work_section = (x0, y0, x1, y1)
         self.work_params = params
         self.write(params)
 
-    def close(self, state: WorkerState, msg=""):
+    def close(self, state: WorkerStatus, msg=""):
         #Socket may be already closed
         try:
             self.sock.shutdown(socket.SHUT_RDWR)
@@ -37,16 +33,17 @@ class ClientWorker(Worker):
         self.set_status(state)
 
     def run(self):
-        while not self.get_status() == WorkerState.DONE and not self.get_status() == WorkerState.FAILED:
-            if self.get_status() == WorkerState.AVAILABLE:
-                self.set_status(WorkerState.WORKING)
+        while not (self.get_status() is WorkerStatus.DONE) or (not self.get_status() is WorkerStatus.FAILED):
+            if self.get_status() is WorkerStatus.WORKING:
+                print("Reading:", self.get_status())
                 data = self.read()
-                if self.get_status() != WorkerState.FAILED:
-                    if data and hasattr(data, "__getitem__"):
+                print("Read:", self.get_status())
+                if self.get_status() is not WorkerStatus.FAILED:
+                    if type(data) is np.ndarray:
                         print('Client Worker got data:', data)
                         self.client.canvas.put_pixels(data, self.work_section[1], self.work_section[0])
-                        self.set_status(WorkerState.AVAILABLE)
+                        self.set_status(WorkerStatus.AVAILABLE)
                     elif type(data) is list and not data:
                         pass
-            else:
-                print("WORKER FAILED")
+                else:
+                    print("Worker({}) failed".format(self.id))
