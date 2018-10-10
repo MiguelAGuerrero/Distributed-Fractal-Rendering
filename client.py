@@ -1,11 +1,12 @@
 import threading
 import socket
 import sys
-from ClientWorker import ClientWorker
+from clientworker import ClientWorker
 from MandelZoom import mandelbrot_image
 import numpy
 from mltcanvas import MLTCanvas
-from Worker import WorkerStatus
+from worker import WorkerStatus
+from fractal import FractalType
 
 def distribute_mandelbrot_work(i, avail_workers, width, height, maxiter):
     vertical_partition = height // avail_workers
@@ -27,6 +28,7 @@ class Client:
         self.maxiter = 256
         self.canvas = MLTCanvas(self.img_width, self.img_height)
         self.params = self.img_width, self.img_height, self.maxiter
+        self.fractal = FractalType.MANDELBROT
 
     def _make_server_socket(self):
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -34,35 +36,13 @@ class Client:
         self.socket.listen(16)
 
 
-    def redistribute_work(self, failed_workers, avail, f, *args):
-        failed_sections = len(failed_workers)
-        avail_help = len(avail) + 1 #Plus one to consider the client as a worker
-
-        for i, worker in enumerate(failed_workers):
-            sect, params = worker.get_work_submission()
-            worker.submit_work(*sect, params)
-
-    def await_worker_status(self, workers):
-        task_complete = False
-
-        while not task_complete:
-            failed = [worker for worker in workers if worker.get_status() is WorkerStatus.FAILED]
-            working = [worker for worker in workers if worker.get_status() is WorkerStatus.WORKING]
-            finished = [worker for worker in workers if worker.get_status() is WorkerStatus.WORK_READY]
-
-            if failed:
-                return WorkerStatus.FAILED
-
-            elif finished and not working:
-                task_complete = True
-
-        return WorkerStatus.WORK_READY
-
     def run(self):
-        avail = self.manager.get_available_workers()
-        if avail:
-            self.distribute_work(avail, distribute_mandelbrot_work, self.img_width, self.img_height, self.maxiter)
-            status = self.await_worker_status(avail)
+        #SOme bugger
+        #config = get_fractal_attributes()
+        if self.manager.workers_available():
+            task = self.manager.distribute_work(distribute_mandelbrot_work, self.img_width, self.img_height, self.maxiter)
+            task.wait()
+            status = task.get_task_status()
             if status is WorkerStatus.WORK_READY:
                 if self.canvas.can_render():
                     print("Displaying")
@@ -92,10 +72,18 @@ class WorkManager(threading.Thread):
         self._add_connection(self.ids,  worker)
         return worker
 
+    def workers_available(self):
+        for conn_id in self.workers:
+            if self.workers[conn_id].get_status() is WorkerStatus.AVAILABLE:
+                return True
+        return False
+
     def distribute_work(self, workers, f, *args):
-        for i, worker in enumerate(workers):
-            sect, params = f(i, len(workers), *args)
+        avail = self.get_available_workers()
+        for i, worker in enumerate(avail):
+            sect, params = f(i, len(avail), *args)
             worker.submit_work(*sect, params)
+
             print("Client REQ", worker, sect, params)
 
         return Task(workers, f, *args)
@@ -124,6 +112,10 @@ class WorkManager(threading.Thread):
         print(self.workers.values())
         return self.workers.values()
 
+
+    def redistribute_work(self, task):
+        pass
+
 def main(args):
     port = int(args[1])
     c = Client(args[0], port)
@@ -150,6 +142,10 @@ class Task:
     def get_task_status(self):
         if self.failed():
             return WorkerStatus.FAILED
+        elif self.in_progress():
+            return WorkerStatus.WORKING
+        else:
+            return WorkerStatus.WORK_READY
 
     def wait(self):
         while True:

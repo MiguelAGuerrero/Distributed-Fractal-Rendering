@@ -5,6 +5,8 @@ import pickle
 from abc import ABC, abstractmethod
 from enum import Enum
 import sys
+from msg import StaticMessage, MessageType, static_msgs
+
 
 class WorkerStatus(Enum):
     FAILED = -1
@@ -12,6 +14,7 @@ class WorkerStatus(Enum):
     AVAILABLE = 0
     WORK_READY = 2
     DONE = 3
+    UNAVAILABLE = 4
 
 class Worker(ABC, threading.Thread):
     def __init__(self, address, port, id=None):
@@ -19,6 +22,13 @@ class Worker(ABC, threading.Thread):
         self.address = address
         self.port = port
         self.status = WorkerStatus.AVAILABLE
+        self.read_switch = {
+            MessageType.CONN: self.on_read_conn
+        ,   MessageType.CLSE: self.on_read_clse
+        ,   MessageType.RSLT: self.on_read_rslt
+        ,   MessageType.RJCT: self.on_read_rjct
+        ,   MessageType.WORK: self.on_read_work
+        ,   MessageType.AVAL: self.on_read_aval}
 
         if id:
             self.id = id
@@ -37,15 +47,18 @@ class Worker(ABC, threading.Thread):
         addr = self.address, self.port
         self.sock.settimeout(1)
         self.sock.connect(addr)
+        self.sock.sendall(StaticMessage(MessageType.CONN).as_bytes())
 
     def read(self):
         data = []
         try:
-            while True:
-                packet = self.sock.recv(1024)
-                if not packet:
-                    break
-                data.append(packet)
+            type = (self.sock.recv(4)).decode("ascii")
+            if type in static_msgs:
+                return self.read_switch[type]()
+            else: #These are dynamic messages
+                data_len = self.sock.recv(4)
+                data = self.sock.recv(data_len)
+                return self.read_switch[type](data)
         except timeout as te:
             pass
         except WindowsError as we:
@@ -56,17 +69,39 @@ class Worker(ABC, threading.Thread):
         if not data:
             return None
 
-        data_arr = pickle.loads(b''.join(data))
-        print(self.__class__.__name__, "Unloaded:", data_arr)
-
-        return data_arr
-
     def write(self, data):
         try:
-            data_string = pickle.dumps(data)
-            self.sock.sendall(data_string)
+            self.sock.sendall(data)
         except:
             self.close(WorkerStatus.FAILED, "write error")
+
+    @abstractmethod
+    def on_read_clse(self):
+        pass
+
+    @abstractmethod
+    def on_read_acpt(self):
+        pass
+
+    @abstractmethod
+    def on_read_rjct(self):
+        pass
+
+    @abstractmethod
+    def on_read_conn(self):
+        pass
+
+    @abstractmethod
+    def on_read_aval(self):
+        pass
+
+    @abstractmethod
+    def on_read_work(self, data):
+        pass
+
+    @abstractmethod
+    def on_read_rslt(self, data):
+        pass
 
     @abstractmethod
     def validate_data(self, data):

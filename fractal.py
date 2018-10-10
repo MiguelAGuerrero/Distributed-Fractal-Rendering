@@ -4,13 +4,21 @@ from itertools import takewhile
 import time
 import multiprocessing
 import numpy as np
-
+from numba import guvectorize, complex128, int32, void, vectorize, float32, float64, uint8
+from enum import Enum, auto
 
 Point = collections.namedtuple("Point", ["x", "y"])
 
+
+class FractalType(Enum):
+    def _generate_next_value_(name, start, count, last_values):
+        return name
+
+    MANDELBROT = auto()
+    JULIA = auto()
+
 def pair_reader(dtype):
   return lambda data: Point(*map(dtype, data.lower().split("x")))
-
 
 DEFAULT_SIZE = "512x512"
 DEFAULT_DEPTH = "256"
@@ -160,6 +168,43 @@ def generate_row(model, c, size, depth, zoom, center, row):
   return [func((2 * (col + deltax) / sidem1 - 1) / zoom + cx, y)
           for col in range(width)]
 
+
+@vectorize([int32(complex128, int32)])
+def mandelbrot(z, maxiter):
+    c = z
+    for n in range(maxiter):
+        if abs(z) > 2:
+            return n
+        z = z * z + c
+        # z = create_function(input('Enter equation in terms of z and c'))
+    return maxiter
+
+@guvectorize(['int32, int32, int32, int64[:,:]'], '(),(),() -> (n,m)')
+def mandelbrot_set(r1, r2, maxiter, n3):
+    height = len(r1)
+    width = len(r2)
+
+    for i in range(width):
+        for j in range(height):
+            n3[j,i] = mandelbrot(r1[i] + 1j * r2[j], maxiter)
+
+# @guvectorize([(complex128[:], uint8[:])], '(n)->(n)', target='parallel')
+# def julia_vect(Z,T):
+#     c_real = creal
+#     c_imag = cimag
+#     for i in range(Z.shape[0]):
+#         zimag = Z[i].imag
+#         zreal = Z[i].real
+#         T[i] = 0
+#         zreal2 = zreal*zreal
+#         zimag2 = zimag*zimag
+#         while zimag2 + zreal2 <= 4:
+#             zimag = 2* zreal*zimag + cimag
+#             zreal = zreal2 - zimag2 + creal
+#             zreal2 = zreal*zreal
+#             zimag2 = zimag*zimag
+#             T[i] += 1
+
 def img2output(img, cmap=DEFAULT_COLORMAP, output=None, show=False):
   """ Plots and saves the desired fractal raster image """
   if output:
@@ -253,4 +298,11 @@ def cli_parse_args(args=None, namespace=None):
   return vars(ns_parsed)
 
 if __name__ == "__main__":
-  exec_command(cli_parse_args())
+    xmin, xmax, width = 0, 1, 100
+    ymin, ymax, height = 0, 1, 100
+
+    r1 = np.linspace(xmin, xmax, width)
+    r2 = np.linspace(ymin, ymax, height)
+    n3 = np.ndarray((height, width))
+    mandelbrot_set(r1, r2, 256, n3)
+    print(n3)
