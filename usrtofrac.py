@@ -1,7 +1,8 @@
 from numba import guvectorize, complex128, int32, void, vectorize, float32, float64, uint8
 import numpy as np
+from math import *
 
-# WWorker xmin, xmax, ymin, ymax, height, width, maxiter
+# Worker xmin, xmax, ymin, ymax, height, width, maxiter
 xmin, xmax = -2, 2
 ymin, ymax = -1, 1
 height, width = 100, 100
@@ -31,14 +32,15 @@ def gen_with_escape_cond(f, i):
 #     return T
 
 def gen(f):
-    def fu(r1, r2, n3=[]):
-        n3 = np.empty((height, width))
+    def fu(r1, r2, maxitr, n3):
+        height  = len(r1)
+        width = len(r2)
         for i in range(width):
             for j in range(height):
-                n3[j, i] = f(r1[i] + 1j * r2[j], maxiter)
+                n3[j, i] = f(r1[j] + 1j * r2[i], maxiter)
 
     # Dynamically decoration of functioin
-    return guvectorize(['float64[:], float64[:], int64[:,:]'], '(n),(m) -> (n,m)')(fu)
+    return guvectorize(['float64[:], float64[:], int32, int64[:,:]'], '(n),(m), () -> (n,m)')(fu)
 
     # r1 = np.array(np.linspace(xmin, xmax, width)
     # r2 = np.array(np.linspace(ymin, ymax, height))
@@ -46,15 +48,7 @@ def gen(f):
     #return [mandelbrot(complex(r, i), maxiter) for r in r1 for i in r2]
 
 if __name__ == '__main__':
-    import time
-
-    my = gen_with_escape_cond(create_function(input('Enter Equation in terms of z and c')), 2)
-    start = time.time()
-    #mandelbrot_set(r1, r2, np.ndarray((len(r1),len(r2))))
-    f = gen(my)
-    f(r1, r2, np.ndarray((len(r1), len(r2))))
-    end = time.time()
-    print(end - start)
+    pass
 
     # start = time.time()
     # #mandelbrot_set(r1, r2, np.ndarray((len(r1), len(r2))))

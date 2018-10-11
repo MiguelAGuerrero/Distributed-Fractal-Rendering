@@ -15,8 +15,8 @@ import pickle
 times = []
 
 predefined_fractals = {
-      FractalType.MANDELBROT  : fractal.mandelbrot_set
-    , FractalType.JULIA     : None
+      FractalType.MANDELBROT.value  : fractal.mandelbrot_set
+    , FractalType.JULIA.value     : None
 }
 
 def timeit(f):
@@ -30,8 +30,8 @@ def timeit(f):
     return times.append(timed)
 
 class FractalWorker(Worker):
-    def __init__(self, address, port, id=None):
-        super().__init__(address, port, id=id)
+    def __init__(self, address, port, conn_id=None):
+        super().__init__(address, port, conn_id=conn_id)
         self.start()
 
     def validate_data(self, data):
@@ -44,23 +44,24 @@ class FractalWorker(Worker):
             print("Could not connect to client at {}:{}".format(self.address, self.port))
             return
 
-        while not self.get_status() is WorkerStatus.DONE:
+        while self.get_status() is not WorkerStatus.DONE:
             self.read()
 
+        self.close()
+
     def compute(self, expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
-        r1 = np.linspace(xmin, xmax, img_width)
-        r2 = np.linspace(ymin, ymax, img_height)
-        n3 = np.ndarray((img_height, img_width))
+        r1 = np.linspace(ymin, ymax, end - start)
+        r2 = np.linspace(xmin, xmax, img_width)
+        n3 = np.ndarray((end - start, img_width))
+        print(n3.shape)
         if expr in predefined_fractals: #Standard Hard Coded Fractals
             fractal_compute_function = predefined_fractals[expr]
         else:
             fractal_compute_function = gen(gen_with_escape_cond(create_function(expr), max_itr))
 
-        try:
-            fractal_compute_function(r1, r2, max_itr, n3)
-            return n3
-        except:
-            pass #Send failure message
+        fractal_compute_function(r1, r2, max_itr, n3)
+
+        return n3
 
         #return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
 
@@ -88,18 +89,19 @@ class FractalWorker(Worker):
             self.write(StaticMessage(MessageType.RJCT).as_bytes())
 
     def on_read_work(self, data):
-        try:
             self.set_status(WorkerStatus.WORKING)
             args = pickle.loads(data)
             results = self.compute(*args)
-            self.write(RSLTMessage(data).as_bytes())
+            self.write(RSLTMessage(results, args[-2], args[-1]).as_bytes())
             self.set_status(WorkerStatus.AVAILABLE)
-        except:
-            self.set_status(WorkerStatus.FAILED)
-            print(self, "failed in computation")
 
     def on_read_rslt(self, data):
         pass
 
 if __name__ == '__main__':
-    FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))
+    if len(sys.argv) == 4:
+        num = int(sys.argv[3])
+        for i in range(num):
+            FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))
+    else:
+        FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))

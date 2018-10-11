@@ -8,21 +8,22 @@ from mltcanvas import MLTCanvas
 from worker import WorkerStatus
 from fractal import FractalType
 
-def distribute_mandelbrot_work(i, avail_workers, width, height, maxiter):
-    vertical_partition = height // avail_workers
-    params = [-2, 1,  # xmin, xmax
-              -1, 1,  # ymin, ymax
-    width, height, maxiter, i * vertical_partition,
-              (i + 1) * vertical_partition]  # SPLIT WORK: xmin, xmax, ymin, ymax
-    return (0, i * vertical_partition, width, (i + 1) * vertical_partition), params
+#expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end
+def partition_horizontally(i, avail_workers, xmin, xmax, ymin, ymax, width, height, maxiter, start, end):
+    vertical_partition = (ymax - ymin) / avail_workers
+    space_interval = round(height / avail_workers)
+    args = [xmin, xmax,  # xmin, xmax
+              ymin + i * vertical_partition, ymin + (i + 1) * vertical_partition,  # ymin, ymax
+              width, height,
+              maxiter, start + i * space_interval, start + (i+1) * space_interval]  # SPLIT WORK: xmin, xmax, ymin, ymax
+
+    return args
 
 class Client:
     def __init__(self, address, port):
         self.address = address
         self.port = port
-        self._make_server_socket()
         self.manager = WorkManager(self)
-        self.manager.start()
         self.img_width = 1000;
         self.img_height = 3 * self.img_width // 4;
         self.maxiter = 256
@@ -30,21 +31,21 @@ class Client:
         self.params = self.img_width, self.img_height, self.maxiter
         self.fractal = FractalType.MANDELBROT
 
-    def _make_server_socket(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind((self.address, self.port))
-        self.socket.listen(16)
-
-
     def run(self):
         #SOme bugger
         #config = get_fractal_attributes()
         if self.manager.workers_available():
-            task = self.manager.distribute_work(distribute_mandelbrot_work, self.img_width, self.img_height, self.maxiter)
+            expr = self.fractal
+            if type(self.fractal) is FractalType:
+                expr = self.fractal.value
+            task = self.manager.distribute_work(partition_horizontally, expr, *[-4, 4, -2, 2,
+                                                                                self.img_width, self.img_height, 256, 0, self.img_height])
             task.wait()
+
+            print("Task done")
             status = task.get_task_status()
-            if status is WorkerStatus.WORK_READY:
-                if self.canvas.can_render():
+            if status is not WorkerStatus.FAILED:
+                if True:
                     print("Displaying")
                     self.canvas.render()
                 else:
@@ -61,13 +62,19 @@ class WorkManager(threading.Thread):
         super().__init__()
         self.workers = {}
         self.ids = 0;
-        self.socket = client.socket
         self.client = client
+        self._make_server_socket()
+        self.start()
+
+    def _make_server_socket(self):
+        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.bind((self.client.address, self.client.port))
+        self.socket.listen(16)
 
     def accept_connection(self):
         self.ids = self.ids + 1
         conn, addr = self.socket.accept()
-        worker = ClientWorker(self.client, conn)
+        worker = ClientWorker(self.client, conn, conn_id=self.ids)
         print('Connected to Worker: ', worker)
         self._add_connection(self.ids,  worker)
         return worker
@@ -78,15 +85,16 @@ class WorkManager(threading.Thread):
                 return True
         return False
 
-    def distribute_work(self, workers, f, *args):
+    def distribute_work(self, distribution_func, expr, *args):
         avail = self.get_available_workers()
         for i, worker in enumerate(avail):
-            sect, params = f(i, len(avail), *args)
-            worker.submit_work(*sect, params)
+            distributed_args = [expr, *distribution_func(i, len(avail), *args)]
 
-            print("Client REQ", worker, sect, params)
+            worker.submit_work(distributed_args)
 
-        return Task(workers, f, *args)
+            print("Client REQ", worker, distributed_args)
+
+        return Task(avail, distribution_func, distributed_args)
 
     def get_available_workers(self):
         return [worker for worker in self.get_workers() if worker.get_status() == WorkerStatus.AVAILABLE]
@@ -112,7 +120,6 @@ class WorkManager(threading.Thread):
         print(self.workers.values())
         return self.workers.values()
 
-
     def redistribute_work(self, task):
         pass
 
@@ -128,28 +135,37 @@ class Task:
         self.function = function
         self.args = args
 
+    def _get_workers_of_status(self, status):
+        return [worker for worker in self.workers if worker.get_status() is status]
+
+    def _worker_of_status_exists(self, status):
+        return any((worker for worker in self.workers if worker.get_status() is status))
+
     def failed(self):
-        for worker in self.workers:
-            if worker.get_status() is WorkerStatus.FAILED:
-                return True
-        return False
+        return self._worker_of_status_exists(WorkerStatus.FAILED)
 
     def in_progress(self):
-        for worker in self.workers:
-            if worker.get_status() is WorkerStatus.WORKING:
-                return True
+        return self._worker_of_status_exists(WorkerStatus.WORKING)
+
+    def get_failed_workers(self):
+        return self._get_workers_of_status(WorkerStatus.FAILED)
+
+    def get_workers_in_progress(self):
+        return self._get_workers_of_status(WorkerStatus.WORKING)
 
     def get_task_status(self):
-        if self.failed():
+        if self.get_failed_workers():
             return WorkerStatus.FAILED
-        elif self.in_progress():
+        elif self.get_workers_in_progress():
             return WorkerStatus.WORKING
         else:
             return WorkerStatus.WORK_READY
 
     def wait(self):
-        while True:
-            pass
+        done = False
+        while not done:
+            if self.failed() or not self.in_progress():
+                done = True
 
 if __name__ == "__main__":
     main(sys.argv[1:])

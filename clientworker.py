@@ -5,8 +5,8 @@ from msg import *
 
 class ClientWorker(Worker):
 
-    def __init__(self, client, sock, id=None):
-        super().__init__(None, None, id=id)
+    def __init__(self, client, sock, conn_id=None):
+        super().__init__(None, None, conn_id=conn_id)
         self.client = client
         self.sock = sock
         self.start()
@@ -15,7 +15,7 @@ class ClientWorker(Worker):
         return data
 
     def get_work_submission(self):
-        return self.work_section, self.work_params
+        return self.work_section, self.work_args
 
     def submit_work(self, args):
         self.set_status(WorkerStatus.WORKING)
@@ -52,15 +52,20 @@ class ClientWorker(Worker):
         pass
 
     def on_read_rslt(self, data):
-        #Last 8 bytes are the dimensions of the ndarray
-        results = np.fromstring(data[:-16], dtype=int)
-        rows = data[-16:-12]
-        columns = data[-12:-8]
-        section_start = data[-8:-4]
-        section_end = data[-4:]
+        results = np.fromstring(data[:-16])
+        print("Shape as client worker sees it:", results.shape)
+
+        print(data[-16:-12], data[-12:-8], data[-8:-4],data[-4:])
+        rows = int.from_bytes(data[-16:-12], sys.byteorder)
+        columns = int.from_bytes(data[-12:-8], sys.byteorder)
+        section_start = int.from_bytes(data[-8:-4], sys.byteorder)
+        section_end = int.from_bytes(data[-4:], sys.byteorder)
+
+        print("Rows: {}, Columns: {}, Section Start: {}, Section End: {}".format(rows, columns, section_start, section_end))
         results = results.reshape((rows, columns))
-        self.client.canvas.put_pixels(data, section_start, 0)
-        self.write(StaticMessage(MessageType.AVAL).as_bytes()) #Check is worker is available for next round
+        print(self.client.canvas.get_pixels().shape)
+        self.client.canvas.put_pixels(results, section_start, 0)
+        self.set_status(WorkerStatus.AVAILABLE)
 
     def run(self):
         while not self.get_status() is WorkerStatus.DONE:

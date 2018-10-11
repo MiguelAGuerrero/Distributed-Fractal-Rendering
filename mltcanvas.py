@@ -7,6 +7,7 @@ class MLTCanvas(Canvas.Canvas):
     def __init__(self, width, height):
         super().__init__(width, height)
         self.data = np.full((height, width), np.nan)
+        print("Canvas shape:", self.data.shape)
 
     def can_render(self):
         return not np.isnan(self.data).any()
@@ -47,5 +48,5 @@ class MLTCanvas(Canvas.Canvas):
 
         norm = colors.PowerNorm(gamma)
         ax.imshow(self.data.T, cmap=cmap, origin='lower', norm=norm)
-        self.data = np.full((height, width), -1)
+        self.data = np.full((self.height, self.width), -1)
         plt.show()

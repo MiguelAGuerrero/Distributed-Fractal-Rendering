@@ -3,6 +3,7 @@ import sys
 from enum import Enum, auto
 import pickle
 import numpy as np
+import sys
 
 from abc import ABC
 
@@ -47,29 +48,32 @@ class StaticMessage(Message):
         self.type = type;
 
     def as_bytes(self):
-        return type.encode("ascii")
+        return self.type.value.encode("ascii")
 
 class WORKMessage(Message):
     def __init__(self, data):
-        super().__init__(self, MessageType.WORK, data)
+        super().__init__(MessageType.WORK, data)
 
     def as_bytes(self):
         payload = pickle.dumps(self.data)
-        return b"".join([self.type.encode("ascii"), len(payload).to_bytes(4), payload])
+        return b"".join([self.type.value.encode("ascii"), len(payload).to_bytes(4, sys.byteorder), payload])
 
 class RSLTMessage(Message):
     def __init__(self, data, section_start, section_end):
-        super().__init__(self, MessageType.RSLT, data)
+        super().__init__(MessageType.RSLT, data)
         self.section_start = section_start
         self.section_end = section_end
 
     def as_bytes(self):
         payload = self.data.tostring()
         rows = self.data.shape[0]
+        print("data len as msg sees it:", len(payload) + 16)
         columns = self.data.shape[1]
-        return b"".join([self.type.encode("ascii"), len(payload) + 16, payload,
-                         rows.to_bytes(4), columns.to_bytes(4),
-                         self.section_start.to_bytes(4), self.section_end.to_bytes(4)])
 
-
-print(msg(MessageType.CONN, [1, 2, 3]))
+        return b"".join([self.type.value.encode("ascii"),
+                         (len(payload) + 16).to_bytes(4, sys.byteorder),
+                         payload,
+                         rows.to_bytes(4, sys.byteorder),
+                         columns.to_bytes(4, sys.byteorder),
+                         self.section_start.to_bytes(4, sys.byteorder),
+                         self.section_end.to_bytes(4, sys.byteorder)])

@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from enum import Enum
 import sys
 from msg import StaticMessage, MessageType, static_msgs
+import struct
 
 
 class WorkerStatus(Enum):
@@ -17,24 +18,23 @@ class WorkerStatus(Enum):
     UNAVAILABLE = 4
 
 class Worker(ABC, threading.Thread):
-    def __init__(self, address, port, id=None):
+    def __init__(self, address, port, conn_id=None):
         super().__init__()
         self.address = address
         self.port = port
         self.status = WorkerStatus.AVAILABLE
         self.read_switch = {
-            MessageType.CONN: self.on_read_conn
-        ,   MessageType.CLSE: self.on_read_clse
-        ,   MessageType.RSLT: self.on_read_rslt
-        ,   MessageType.RJCT: self.on_read_rjct
-        ,   MessageType.WORK: self.on_read_work
-        ,   MessageType.AVAL: self.on_read_aval}
+            MessageType.CONN.value: self.on_read_conn
+        ,   MessageType.CLSE.value: self.on_read_clse
+        ,   MessageType.RSLT.value: self.on_read_rslt
+        ,   MessageType.RJCT.value: self.on_read_rjct
+        ,   MessageType.WORK.value: self.on_read_work
+        ,   MessageType.AVAL.value: self.on_read_aval}
 
-        if id:
-            self.id = id
+        self.conn_id = conn_id
 
     def __str__(self):
-        return self.__class__.__name__ + str(id)
+        return self.__class__.__name__ + str(self.conn_id)
 
     def set_status(self, status: WorkerStatus):
         self.status = status
@@ -47,24 +47,36 @@ class Worker(ABC, threading.Thread):
         addr = self.address, self.port
         self.sock.settimeout(1)
         self.sock.connect(addr)
-        self.sock.sendall(StaticMessage(MessageType.CONN).as_bytes())
+        #self.sock.sendall(StaticMessage(MessageType.CONN).as_bytes())
 
     def read(self):
         data = []
         try:
             type = (self.sock.recv(4)).decode("ascii")
-            if type in static_msgs:
+            if not type:
+                pass
+            elif type in static_msgs:
                 return self.read_switch[type]()
             else: #These are dynamic messages
-                data_len = self.sock.recv(4)
-                data = self.sock.recv(data_len)
-                return self.read_switch[type](data)
+                data_len = int.from_bytes(self.sock.recv(4), sys.byteorder)
+                print("Data length on read:", data_len)
+                done_reading = False
+
+                bytes_read = 0
+                data_buf = bytearray()
+                packet_buf = bytearray(data_len)
+                while not done_reading:
+                    read = self.sock.recv_into(packet_buf)
+                    bytes_read += read
+                    print('     bytes read', bytes_read)
+                    data_buf.extend(packet_buf[:read])
+                    if bytes_read == data_len:
+                        done_reading = True
+
+                return self.read_switch[type](bytes(data_buf))
+
         except timeout as te:
             pass
-        except WindowsError as we:
-            self.close(WorkerStatus.FAILED, msg=we)
-        except Exception as e:
-            self.close(WorkerStatus.FAILED, msg=e)
 
         if not data:
             return None

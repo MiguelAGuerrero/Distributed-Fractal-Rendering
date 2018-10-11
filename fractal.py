@@ -179,7 +179,7 @@ def mandelbrot(z, maxiter):
         # z = create_function(input('Enter equation in terms of z and c'))
     return maxiter
 
-@guvectorize(['int32, int32, int32, int64[:,:]'], '(),(),() -> (n,m)')
+@guvectorize(['float64[:], float64[:], int32, int64[:,:]'], '(m),(n),() -> (m,n)')
 def mandelbrot_set(r1, r2, maxiter, n3):
     height = len(r1)
     width = len(r2)
