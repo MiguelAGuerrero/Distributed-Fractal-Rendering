@@ -18,10 +18,11 @@ class MessageType(Enum):
     ACPT = auto()
     RJCT = auto()
     RSLT = auto()
+    FAIL = auto()
 
 
-static_msgs = set([MessageType.CONN, MessageType.CLSE, MessageType.AVAL, MessageType.ACPT, MessageType.RJCT])
-dynamic_msgs = set([MessageType.WORK, MessageType.RSLT])
+static_msgs = [msg.value for msg in [MessageType.CONN, MessageType.CLSE, MessageType.AVAL, MessageType.ACPT, MessageType.RJCT, MessageType.FAIL]]
+dynamic_msgs = [msg.value for msg in set([MessageType.WORK, MessageType.RSLT])]
 
 def msg(type, data=None):
     if type in static_msgs:

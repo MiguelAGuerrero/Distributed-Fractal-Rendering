@@ -7,7 +7,6 @@ class MLTCanvas(Canvas.Canvas):
     def __init__(self, width, height):
         super().__init__(width, height)
         self.data = np.full((height, width), np.nan)
-        print("Canvas shape:", self.data.shape)
 
     def can_render(self):
         return not np.isnan(self.data).any()

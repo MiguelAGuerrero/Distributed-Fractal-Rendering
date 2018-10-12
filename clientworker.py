@@ -51,19 +51,22 @@ class ClientWorker(Worker):
     def on_read_work(self, data):
         pass
 
+    def on_read_fail(self):
+        self.set_status(WorkerStatus.FAILED)
+
     def on_read_rslt(self, data):
         results = np.fromstring(data[:-16])
-        print("Shape as client worker sees it:", results.shape)
+        #print("Shape as client worker sees it:", results.shape)
 
-        print(data[-16:-12], data[-12:-8], data[-8:-4],data[-4:])
+        #print(data[-16:-12], data[-12:-8], data[-8:-4],data[-4:])
         rows = int.from_bytes(data[-16:-12], sys.byteorder)
         columns = int.from_bytes(data[-12:-8], sys.byteorder)
         section_start = int.from_bytes(data[-8:-4], sys.byteorder)
         section_end = int.from_bytes(data[-4:], sys.byteorder)
 
-        print("Rows: {}, Columns: {}, Section Start: {}, Section End: {}".format(rows, columns, section_start, section_end))
+        #print("Rows: {}, Columns: {}, Section Start: {}, Section End: {}".format(rows, columns, section_start, section_end))
         results = results.reshape((rows, columns))
-        print(self.client.canvas.get_pixels().shape)
+        #print(self.client.canvas.get_pixels().shape)
         self.client.canvas.put_pixels(results, section_start, 0)
         self.set_status(WorkerStatus.AVAILABLE)
 
@@ -71,4 +74,5 @@ class ClientWorker(Worker):
         while not self.get_status() is WorkerStatus.DONE:
             self.read()
             if self.get_status() is WorkerStatus.FAILED:
-                    print("Worker({}) failed".format(self.id))
+                    #print("Worker({}) failed".format(self.conn_id))
+                    pass

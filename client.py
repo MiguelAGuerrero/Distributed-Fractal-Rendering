@@ -2,20 +2,21 @@ import threading
 import socket
 import sys
 from clientworker import ClientWorker
-from MandelZoom import mandelbrot_image
-import numpy
 from mltcanvas import MLTCanvas
 from worker import WorkerStatus
 from fractal import FractalType
+from fractalworker import FractalWorker
 
 #expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end
 def partition_horizontally(i, avail_workers, xmin, xmax, ymin, ymax, width, height, maxiter, start, end):
-    vertical_partition = (ymax - ymin) / avail_workers
-    space_interval = round(height / avail_workers)
+    space_interval = height / avail_workers
+
+    #avail_workers may not evenly divide into the height of the image
+    #round the values for discrete values
     args = [xmin, xmax,  # xmin, xmax
-              ymin + i * vertical_partition, ymin + (i + 1) * vertical_partition,  # ymin, ymax
+              ymin, ymax,  # ymin, ymax
               width, height,
-              maxiter, start + i * space_interval, start + (i+1) * space_interval]  # SPLIT WORK: xmin, xmax, ymin, ymax
+              maxiter, round(start + i * space_interval), round(start + (i+1) * space_interval)]  # SPLIT WORK: xmin, xmax, ymin, ymax
 
     return args
 
@@ -30,32 +31,57 @@ class Client:
         self.canvas = MLTCanvas(self.img_width, self.img_height)
         self.params = self.img_width, self.img_height, self.maxiter
         self.fractal = FractalType.MANDELBROT
+        self.personal_worker = FractalWorker(self.address, self.port)
+        self.xmin = -2
+        self.xmax = 1
+        self.ymin = -1.1
+        self.ymax = 1.5
+        self.maxiter = 256
+
+
+    def naive_task_manage(self):
+        work_done = False
+        # Naive approach: Just compute the fractal over and over again until a complete image is formed
+        # A better approach would be to subdivided the missing sections among available workers
+        # instead of computing the same results over again
+        while not work_done:
+            task = self.manager.distribute_work(partition_horizontally, self.get_fractal_expr(),
+                                                *[self.xmin, self.xmax, self.ymin, self.ymax,
+                                                  self.img_width, self.img_height, self.maxiter, 0, self.img_height])
+            task.wait()
+            print("Done waiting for task")
+            status = task.get_task_status()
+            if status is WorkerStatus.FAILED:
+                if self.manager.workers_available():
+                    print("Tasked failed: redistibuting work")
+                else:
+                    print("Task failed: no more workers. Client now rendering...")
+                    self.self_compute_fractal()
+                    work_done = True
+            else:
+                work_done = True
 
     def run(self):
-        #SOme bugger
-        #config = get_fractal_attributes()
         if self.manager.workers_available():
-            expr = self.fractal
-            if type(self.fractal) is FractalType:
-                expr = self.fractal.value
-            task = self.manager.distribute_work(partition_horizontally, expr, *[-4, 4, -2, 2,
-                                                                                self.img_width, self.img_height, 256, 0, self.img_height])
-            task.wait()
-
-            print("Task done")
-            status = task.get_task_status()
-            if status is not WorkerStatus.FAILED:
-                if True:
-                    print("Displaying")
-                    self.canvas.render()
-                else:
-                    print("Insufficient work")
-                    #Loop back and ask for more work to be done
-            else:
-                print()
+            self.naive_task_manage()
         else:
-            pass
-            #render your damn self
+            print("No workers available: client rendering...")
+            self.self_compute_fractal()
+
+        print("Displaying")
+        self.canvas.render()
+
+    def self_compute_fractal(self, expr):
+        results = self.personal_worker.compute(self.get_fractal_expr(), *[self.xmin, self.xmax, self.ymin, self.ymax,
+                                                       self.img_width, self.img_height,
+                                                       self.maxiter, 0, self.img_height])
+        self.canvas.put_pixels(results, 0, 0)
+
+    def get_fractal_expr(self):
+        expr = self.fractal
+        if type(self.fractal) is FractalType:
+            expr = self.fractal.value
+        return expr
 
 class WorkManager(threading.Thread):
     def __init__(self, client):
@@ -92,7 +118,7 @@ class WorkManager(threading.Thread):
 
             worker.submit_work(distributed_args)
 
-            print("Client REQ", worker, distributed_args)
+            print("Client REQ:", worker, distributed_args)
 
         return Task(avail, distribution_func, distributed_args)
 
@@ -162,10 +188,9 @@ class Task:
             return WorkerStatus.WORK_READY
 
     def wait(self):
-        done = False
-        while not done:
-            if self.failed() or not self.in_progress():
-                done = True
+        while self.in_progress():
+            continue
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])

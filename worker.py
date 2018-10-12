@@ -29,8 +29,8 @@ class Worker(ABC, threading.Thread):
         ,   MessageType.RSLT.value: self.on_read_rslt
         ,   MessageType.RJCT.value: self.on_read_rjct
         ,   MessageType.WORK.value: self.on_read_work
-        ,   MessageType.AVAL.value: self.on_read_aval}
-
+        ,   MessageType.AVAL.value: self.on_read_aval
+        ,   MessageType.FAIL.value: self.on_read_fail}
         self.conn_id = conn_id
 
     def __str__(self):
@@ -59,7 +59,7 @@ class Worker(ABC, threading.Thread):
                 return self.read_switch[type]()
             else: #These are dynamic messages
                 data_len = int.from_bytes(self.sock.recv(4), sys.byteorder)
-                print("Data length on read:", data_len)
+                #3print("Data length on read:", data_len)
                 done_reading = False
 
                 bytes_read = 0
@@ -68,7 +68,7 @@ class Worker(ABC, threading.Thread):
                 while not done_reading:
                     read = self.sock.recv_into(packet_buf)
                     bytes_read += read
-                    print('     bytes read', bytes_read)
+                    #print('     bytes read', bytes_read)
                     data_buf.extend(packet_buf[:read])
                     if bytes_read == data_len:
                         done_reading = True
@@ -115,6 +115,9 @@ class Worker(ABC, threading.Thread):
     def on_read_rslt(self, data):
         pass
 
+    def on_read_fail(self):
+        pass
+
     @abstractmethod
     def validate_data(self, data):
         pass
@@ -126,6 +129,7 @@ class Worker(ABC, threading.Thread):
     @abstractmethod
     def close(self, status: WorkerStatus, msg=None):
         pass
+
 
 if __name__ == '__main__':
     w = Worker(IP='127.0.0.1', port=1000)

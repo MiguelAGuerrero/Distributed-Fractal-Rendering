@@ -32,7 +32,8 @@ def mandelbrot_set2(xmin, xmax, ymin, ymax, width, height, maxiter, begin, end, 
     data = np.zeros((offset, width))
     for i in range(begin, end):
         for j in range(width):
-            data[i - offset, j] = mandelbrot(c[i][j], maxiter)
+            data[i - begin, j] = mandelbrot(c[i][j], maxiter)
+
     return data
 
 def mandelbrot_image2(xmin, xmax, ymin, ymax, width=10, height=10, \
