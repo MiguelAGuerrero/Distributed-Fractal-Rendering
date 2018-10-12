@@ -136,6 +136,18 @@ def generate_fractal(model, c=None, size=pair_reader(int)(DEFAULT_SIZE),
     print('Time taken:', time.time() - start)
     return img
 
+def mandelbrot_set2(xmin, xmax, ymin, ymax, width, height, maxiter, begin, end, data=None):
+    r1 = np.linspace(xmin, xmax, width, dtype=np.float64)
+    r2 = np.linspace(ymin, ymax, height, dtype=np.float64)
+    c = r1 + r2[:, None] * 1j
+
+    offset = end - begin
+    data = np.zeros((offset, width))
+    for i in range(begin, end):
+        for j in range(width):
+            data[i - begin, j] = mandelbrot(c[i][j], maxiter)
+
+    return data
 
 def generate_rows(model, c, y0, y1, size=pair_reader(int)(DEFAULT_SIZE),
                      depth=int(DEFAULT_DEPTH), zoom=float(DEFAULT_ZOOM),

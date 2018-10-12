@@ -1,8 +1,7 @@
 from worker import WorkerStatus, Worker
 import time
 from usrtofrac import create_function, gen_with_escape_cond, gen
-from fractal import FractalType, mandelbrot_set
-from MandelZoom import mandelbrot_set2
+from fractal import FractalType, mandelbrot_set, mandelbrot_set2
 from msg import *
 import pickle
 import random
@@ -46,22 +45,18 @@ class FractalWorker(Worker):
 
     @timeit
     def compute(self, expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
-        r1 = np.linspace(ymin, ymax, end - start, dtype=np.float64)
-        r2 = np.linspace(xmin, xmax, img_width, dtype=np.float64)
-        n3 = np.ndarray((end - start, img_width), dtype=int)
-        print(n3.shape)
+
         if expr in predefined_fractals: #Standard Hard Coded Fractals
             fractal_compute_function = predefined_fractals[expr]
-        else:
-            fractal_compute_function = gen(gen_with_escape_cond(create_function(expr), max_itr))
-
-        if True:
             data = fractal_compute_function(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end, data=None)
             return data
         else:
+            r1 = np.linspace(ymin, ymax, end - start, dtype=np.float64)
+            r2 = np.linspace(xmin, xmax, img_width, dtype=np.float64)
+            n3 = np.ndarray((end - start, img_width))
+            fractal_compute_function = gen(gen_with_escape_cond(create_function(expr), max_itr))
             fractal_compute_function(r1, r2, max_itr, n3)
-
-        return n3
+            return n3
 
         #return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
 

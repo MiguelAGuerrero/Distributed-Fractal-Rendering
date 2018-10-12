@@ -49,6 +49,8 @@ class Worker(ABC, threading.Thread):
         self.sock.connect(addr)
         #self.sock.sendall(StaticMessage(MessageType.CONN).as_bytes())
 
+
+    #TODO: Deal with ConnectionResetError
     def read(self):
         data = []
         try:
@@ -81,6 +83,7 @@ class Worker(ABC, threading.Thread):
         if not data:
             return None
 
+    #TODO: deal with ConnectionResetError
     def write(self, data):
         try:
             self.sock.sendall(data)

@@ -38,8 +38,7 @@ class Client:
         self.ymax = 1.5
         self.maxiter = 256
 
-
-    def naive_task_manage(self):
+    def naive_task_handling(self):
         work_done = False
         # Naive approach: Just compute the fractal over and over again until a complete image is formed
         # A better approach would be to subdivided the missing sections among available workers
@@ -63,7 +62,7 @@ class Client:
 
     def run(self):
         if self.manager.workers_available():
-            self.naive_task_manage()
+            self.naive_task_handling()
         else:
             print("No workers available: client rendering...")
             self.self_compute_fractal()
@@ -71,7 +70,7 @@ class Client:
         print("Displaying")
         self.canvas.render()
 
-    def self_compute_fractal(self, expr):
+    def self_compute_fractal(self):
         results = self.personal_worker.compute(self.get_fractal_expr(), *[self.xmin, self.xmax, self.ymin, self.ymax,
                                                        self.img_width, self.img_height,
                                                        self.maxiter, 0, self.img_height])
@@ -101,7 +100,7 @@ class WorkManager(threading.Thread):
         self.ids = self.ids + 1
         conn, addr = self.socket.accept()
         worker = ClientWorker(self.client, conn, conn_id=self.ids)
-        print('Connected to Worker: ', worker)
+        print('Connected to Worker:', worker)
         self._add_connection(self.ids,  worker)
         return worker
 
@@ -185,7 +184,15 @@ class Task:
         elif self.get_workers_in_progress():
             return WorkerStatus.WORKING
         else:
-            return WorkerStatus.WORK_READY
+            return WorkerStatus.DONE
+
+    def wait_or_break_on_failure(self):
+        '''Needed if the client needs to handle a failure
+        during computation. Waiting for all workers
+        to be done can waste time if there is a
+        failure'''
+        while self.in_progress() or not self.failed():
+            continue
 
     def wait(self):
         while self.in_progress():
