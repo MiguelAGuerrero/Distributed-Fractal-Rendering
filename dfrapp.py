@@ -2,7 +2,8 @@ import threading
 import socket
 import sys
 from clientworker import ClientWorker
-from mltcanvas import MLTCanvas
+#from mltcanvas import MLTCanvas
+from GUICanvas import GUICanvas
 from worker import WorkerStatus
 from fractal import FractalType
 from fractalworker import FractalWorker
@@ -28,14 +29,14 @@ class Client:
         self.img_width = 1000;
         self.img_height = 3 * self.img_width // 4;
         self.maxiter = 256
-        self.canvas = MLTCanvas(self.img_width, self.img_height)
+        self.canvas = GUICanvas(self.img_width, self.img_height)
         self.params = self.img_width, self.img_height, self.maxiter
         self.fractal = FractalType.MANDELBROT
         self.personal_worker = FractalWorker(self.address, self.port)
         self.xmin = -2
         self.xmax = 1
-        self.ymin = -1.1
-        self.ymax = 1.5
+        self.ymin = -1
+        self.ymax = 1
         self.maxiter = 256
 
     def naive_task_handling(self):
