@@ -8,8 +8,8 @@ import sys
 from abc import ABC
 
 class MessageType(Enum):
-    def _generate_next_value_(name, start, count, last_values):
-        return name
+    def _generate_next_value_(self, start, count, last_values):
+        return self
 
     WORK = auto()
     CONN = auto()
@@ -22,7 +22,7 @@ class MessageType(Enum):
 
 
 static_msgs = [msg.value for msg in [MessageType.CONN, MessageType.CLSE, MessageType.AVAL, MessageType.ACPT, MessageType.RJCT, MessageType.FAIL]]
-dynamic_msgs = [msg.value for msg in set([MessageType.WORK, MessageType.RSLT])]
+dynamic_msgs = [msg.value for msg in {MessageType.WORK, MessageType.RSLT}]
 
 def msg(type, data=None):
     if type in static_msgs:

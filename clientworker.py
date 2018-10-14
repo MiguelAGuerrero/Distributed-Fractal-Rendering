@@ -4,7 +4,6 @@ import numpy as np
 from msg import *
 
 class ClientWorker(Worker):
-
     def __init__(self, client, sock, conn_id=None):
         super().__init__(None, None, conn_id=conn_id)
         self.client = client

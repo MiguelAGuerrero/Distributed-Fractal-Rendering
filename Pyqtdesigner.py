@@ -6,7 +6,8 @@
 #
 # WARNING! All changes made in this file will be lost!
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from Canvas import Canvas
+from PyQt5.Q
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):

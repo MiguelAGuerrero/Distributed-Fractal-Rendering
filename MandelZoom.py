@@ -1,7 +1,8 @@
-from numba import jit, guvectorize, float64, complex64,int64, float32
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib import colors
+from numba import jit
+
 
 @jit
 def mandelbrot(c, maxiter):

@@ -7,6 +7,7 @@ from mltcanvas import MLTCanvas
 from worker import WorkerStatus
 from fractal import FractalType
 from fractalworker import FractalWorker
+from Canvas import Canvas
 
 #expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end
 def partition_horizontally(i, avail_workers, xmin, xmax, ymin, ymax, width, height, maxiter, start, end):
@@ -37,15 +38,40 @@ class Client:
         self.ymin = -1
         self.ymax = 1
 
+    def set_canvas(self, canvas: Canvas):
+        self.canvas = canvas
+
+    def smarter_task_handling(self):
+        work_done = False
+        # Naive approach: Just compute the fractal over and over again until a complete image is formed
+        # A better approach would be to subdivided the missing sections among available workers
+        # instead of computing the same results over again
+        while not work_done:
+            args = [self.xmin, self.xmax, self.ymin, self.ymax, self.img_width, self.img_height, self.maxiter, 0, self.img_height]
+            task = self.manager.distribute_work(partition_horizontally, self.get_fractal_expr(), *args)
+            task.wait()
+            print("Done waiting for task")
+            status = task.get_task_status()
+            if status is WorkerStatus.FAILED:
+                if self.manager.workers_available():
+                    print("Tasked failed: redistibuting work")
+                else:
+                    print("Task failed: no more workers. Client now rendering...")
+                    self.self_compute_fractal()
+                    work_done = True
+            else:
+                work_done = True
+
     def naive_task_handling(self):
         work_done = False
         # Naive approach: Just compute the fractal over and over again until a complete image is formed
         # A better approach would be to subdivided the missing sections among available workers
         # instead of computing the same results over again
         while not work_done:
-            task = self.manager.distribute_work(partition_horizontally, self.get_fractal_expr(),
-                                                *[self.xmin, self.xmax, self.ymin, self.ymax,
-                                                  self.img_width, self.img_height, self.maxiter, 0, self.img_height])
+            args = [self.xmin, self.xmax, self.ymin, self.ymax, self.img_width, self.img_height, self.maxiter, 0, self.img_height]
+            task, client_args = self.manager.distribute_work(partition_horizontally, self.get_fractal_expr(), *args)
+            results = self.personal_worker.compute(*client_args)
+            self.canvas.put_pixels(results, 0, 0)
             task.wait()
             print("Done waiting for task")
             status = task.get_task_status()
@@ -104,21 +130,24 @@ class WorkManager(threading.Thread):
         return worker
 
     def workers_available(self):
+        count = 0
         for conn_id in self.workers:
             if self.workers[conn_id].get_status() is WorkerStatus.AVAILABLE:
-                return True
-        return False
+                count += 1
+        return count
 
     def distribute_work(self, distribution_func, expr, *args):
         avail = self.get_available_workers()
+        client_args = [expr, *distribution_func(0, len(avail) + 1, *args)]
         for i, worker in enumerate(avail):
-            distributed_args = [expr, *distribution_func(i, len(avail), *args)]
+            # Plus 1 to include client
+            distributed_args = [expr, *distribution_func(i + 1, len(avail) + 1, *args)]
 
             worker.submit_work(distributed_args)
 
             print("Client REQ:", worker, distributed_args)
 
-        return Task(avail, distribution_func, distributed_args)
+        return Task(avail, distribution_func, distributed_args), client_args
 
     def get_available_workers(self):
         return [worker for worker in self.get_workers() if worker.get_status() == WorkerStatus.AVAILABLE]
