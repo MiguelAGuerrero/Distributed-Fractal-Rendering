@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-class Canvas(ABC):
+class FractalCanvas(ABC):
     def __init__(self, width, height):
         self.width = width
         self.height = height

@@ -1,9 +1,9 @@
-import Canvas
+import fractalcanvas
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
-class MLTCanvas(Canvas.Canvas):
+class MLTCanvas(fractalcanvas.FractalCanvas):
     def __init__(self, width, height):
         super().__init__(width, height)
         self.data = np.full((height, width), np.nan)

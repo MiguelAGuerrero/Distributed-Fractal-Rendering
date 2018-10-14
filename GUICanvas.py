@@ -1,12 +1,15 @@
-from Canvas import Canvas
-import PIL
-from GUI import GUI
+from PIL import ImageTk
 
-class GUICanvas(Canvas):
-    def __init__(self, width, height):
+from fractalcanvas import FractalCanvas
+import PIL
+
+
+class GUICanvas(FractalCanvas):
+    def __init__(self, width, height, canvas):
         super().__init__(width, height)
         self.img_width = width
         self.img_height = height
+        self.canvas = canvas
         self.img = PIL.Image.new('RGB', (self.img_width, self.img_height))
         print(type(self.img))
 
@@ -22,4 +25,5 @@ class GUICanvas(Canvas):
             self.img.putpixel((i, j), (250,255,200))
     def get_pixel(self, pixel, i, j): pass
     def render(self, *args, **kwargs):
-        GUI.__init__(GUI,self.img)
+        self.image = ImageTk.PhotoImage(image=self.img)
+        self.canvas.create_image(self.img_width-400, self.img_height-400, image=self.image)
