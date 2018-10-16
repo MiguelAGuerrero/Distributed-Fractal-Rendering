@@ -19,8 +19,8 @@ def timeit(f):
         ts = time.time()
         result = f(*args, **kw)
         te = time.time()
-        print ('func %r took: %2.4f sec' % \
-          (f.__name__, te-ts))
+        print ('%s took: %2.4f sec' % \
+          (id, f.__name__, te-ts))
         return result
     return timed
 
@@ -43,20 +43,25 @@ class FractalWorker(Worker):
 
         self.close()
 
-    @timeit
     def compute(self, expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
+
+        ts = time.time()
 
         if expr in predefined_fractals: #Standard Hard Coded Fractals
             fractal_compute_function = predefined_fractals[expr]
             data = fractal_compute_function(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end, data=None)
-            return data
+            results =  data
         else:
-            r1 = np.linspace(ymin, ymax, end - start, dtype=np.float64)
-            r2 = np.linspace(xmin, xmax, img_width, dtype=np.float64)
+            r1 = np.linspace(ymin, ymax, end - start, dtype=np.floa)
+            r2 = np.linspace(xmin, xmax, img_width, dtype=np.int32)
             n3 = np.ndarray((end - start, img_width))
             fractal_compute_function = gen(gen_with_escape_cond(create_function(expr), max_itr))
             fractal_compute_function(r1, r2, max_itr, n3)
-            return n3
+            results = n3
+
+        te = time.time()
+        print ('%s took: %2.4f sec' % (self, te-ts))
+        return results
 
         #return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
 
@@ -89,10 +94,12 @@ class FractalWorker(Worker):
             self.set_status(WorkerStatus.WORKING)
             args = pickle.loads(data)
             results = self.compute(*args)
+            print(results)
             if results is None:
                 self.write(StaticMessage(MessageType.FAIL).as_bytes())
             else:
                 self.write(RSLTMessage(results, args[-2], args[-1]).as_bytes())
+
             self.set_status(WorkerStatus.AVAILABLE)
 
     def on_read_rslt(self, data):
@@ -115,7 +122,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 4:
         num = int(sys.argv[3])
         for i in range(num):
-            worker = BadWorker(address=sys.argv[1], port=int(sys.argv[2]))
+            worker = FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))
             worker.start()
     else:
         bw = BadWorker(address=sys.argv[1], port=int(sys.argv[2]), force_terminate=True)

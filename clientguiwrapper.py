@@ -4,7 +4,8 @@ import socket
 from numpcanvas import NUMPCanvas
 from msg import RSLTMessage
 import struct
-
+import numpy as np
+import threading
 
 '''
 clientwrappergui provided a wrapped client for the Java GUI. By building ontop of the client, it is possible to 
@@ -127,7 +128,18 @@ class SocketCanvas(NUMPCanvas):
         self.sock = sock
 
     def render(self):
-        self.sock.sendall(RSLTMessage(self.data, 0, 0).as_bytes())
+        int_bytes = []
+        for i in range(self.data.shape[0]):
+            for j in range(self.data.shape[1]):
+                int_bytes.append(self.data[i, j].item().to_bytes(4, sys.byteorder, signed=True))
+
+        msg = b"".join([b"RSLT",
+                       (4 * len(int_bytes) + 8).to_bytes(4, sys.byteorder, signed=True),
+                       *int_bytes,
+                       self.data.shape[0].to_bytes(4, sys.byteorder, signed=True),
+                       self.data.shape[1].to_bytes(4, sys.byteorder, signed=True)])
+
+        self.sock.sendall(msg)
 
 def bytes_to_float(buf, start, end):
     return struct.unpack('f', buf[start:end])[0]

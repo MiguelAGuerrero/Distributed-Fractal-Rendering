@@ -7,6 +7,7 @@ class NUMPCanvas(fractalcanvas.FractalCanvas):
     def __init__(self, width, height):
         super().__init__(width, height)
         self.data = np.full((height, width), np.nan)
+        self.data.dtype = np.int64
 
     def can_render(self):
         return not np.isnan(self.data).any()

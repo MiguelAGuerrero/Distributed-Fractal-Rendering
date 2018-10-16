@@ -191,7 +191,7 @@ def mandelbrot(z, maxiter):
         # z = create_function(input('Enter equation in terms of z and c'))
     return maxiter
 
-@guvectorize(['float64[:], float64[:], int32, int64[:,:]'], '(m),(n),() -> (m,n)')
+@guvectorize(['float64[:], float64[:], int32, int32[:,:]'], '(m),(n),() -> (m,n)')
 def mandelbrot_set(r1, r2, maxiter, n3):
     height = len(r1)
     width = len(r2)
@@ -201,7 +201,7 @@ def mandelbrot_set(r1, r2, maxiter, n3):
             n3[j,i] = mandelbrot(r1[i] + 1j * r2[j], maxiter)
 
 # @guvectorize([(complex128[:], uint8[:])], '(n)->(n)', target='parallel')
-# def julia_vect(Z,T):
+# def julia_vect(Z, T):
 #     c_real = creal
 #     c_imag = cimag
 #     for i in range(Z.shape[0]):

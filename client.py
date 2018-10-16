@@ -26,7 +26,7 @@ class Client(threading.Thread):
         self.address = address
         self.port = port
         self.manager = WorkManager(self)
-        self.img_width = 1000;
+        self.img_width = 100;
         self.img_height = 3 * self.img_width // 4;
         self.maxiter = 256
         self.canvas = NUMPCanvas(self.img_width, self.img_height)
