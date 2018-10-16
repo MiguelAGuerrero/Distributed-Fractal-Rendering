@@ -1,5 +1,11 @@
 from abc import ABC, abstractmethod
 
+'''
+    Module that fractal workers use to access computational predefined fractals
+    this design choice was made when we realized that function pointers are 
+    tricky and to avoid security issue that arise from using eval
+    (eval is evil)
+'''
 class FractalCanvas(ABC):
     def __init__(self, width, height):
         self.width = width

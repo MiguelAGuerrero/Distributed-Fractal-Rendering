@@ -1,13 +1,9 @@
 import threading
-from MandelZoom import mandelbrot
-from socket import socket, SOCK_STREAM, AF_INET, SOL_SOCKET,SO_REUSEADDR, timeout
-import pickle
+from socket import socket, SOCK_STREAM, AF_INET, timeout
 from abc import ABC, abstractmethod
 from enum import Enum
 import sys
-from msg import StaticMessage, MessageType, static_msgs
-import struct
-
+from msg import MessageType, static_msgs
 
 class WorkerStatus(Enum):
     FAILED = -1
@@ -61,7 +57,6 @@ class Worker(ABC, threading.Thread):
                 return self.read_switch[type]()
             else: #These are dynamic messages
                 data_len = int.from_bytes(self.sock.recv(4), sys.byteorder)
-                #3print("Data length on read:", data_len)
                 done_reading = False
 
                 bytes_read = 0
@@ -70,7 +65,6 @@ class Worker(ABC, threading.Thread):
                 while not done_reading:
                     read = self.sock.recv_into(packet_buf)
                     bytes_read += read
-                    #print('     bytes read', bytes_read)
                     data_buf.extend(packet_buf[:read])
                     if bytes_read == data_len:
                         done_reading = True
@@ -84,7 +78,8 @@ class Worker(ABC, threading.Thread):
                 self.close(WorkerStatus.FAILED, "connection closed while working")
             elif self.get_status() is WorkerStatus.AVAILABLE:
                 self.close(WorkerStatus.DONE, "connection closed")
-        except:
+        except Exception as e:
+            print(e)
             self.close(WorkerStatus.DONE, "unexpected connection error occured")
         if not data:
             return None

@@ -3,6 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
 
+""" In the event that no workers are available,
+    the end-user will use the NUMPCanvas.
+    The NUMPCanvas uses Matplotlib for the rendering 
+    which is compatible with Numpy Arrays that are
+    passed into the Canvas.
+"""
 class NUMPCanvas(fractalcanvas.FractalCanvas):
     def __init__(self, width, height):
         super().__init__(width, height)
@@ -32,20 +38,7 @@ class NUMPCanvas(fractalcanvas.FractalCanvas):
         height = 10
         cmap = 'jet'
         gamma = 0.3
-
-        # dpi = 72
-        # img_width = dpi * width
-        # img_height = dpi * height
-        # z = data
-
         fig, ax = plt.subplots(figsize=(width, height), dpi=72)
-        # ticks = np.arange(0, img_width, 3 * dpi)
-        # x_ticks = xmin + (xmax - xmin) * ticks / img_width
-        # plt.xticks(ticks, x_ticks)
-        # y_ticks = ymin + (ymax - ymin) * ticks / img_height
-        # plt.yticks(ticks, y_ticks)
-        # ax.set_title(cmap)
-
         norm = colors.PowerNorm(gamma)
         ax.imshow(self.data.T, cmap=cmap, origin='lower', norm=norm)
         self.data = np.full((self.height, self.width), -1)

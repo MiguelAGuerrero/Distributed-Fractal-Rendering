@@ -1,29 +1,38 @@
 from worker import WorkerStatus, Worker
 import time
 from usrtofrac import create_function, gen_with_escape_cond, gen
-from fractal import FractalType, mandelbrot_set, mandelbrot_set2
+from fractal import FractalType, mandelbrot_set2
 from msg import *
 import pickle
 import random
 import sys
-
+import numpy as np
 times = []
 
 predefined_fractals = {
       FractalType.MANDELBROT.value  : mandelbrot_set2
-    , FractalType.JULIA.value     : None
-}
+    , FractalType.JULIA.value     : None}
 
+'''
+    Decorator function that wrapper around other functions 
+    and returns a time. Mostly used to easily see
+     bottlenecks that exist in the fractal computation code
+'''
 def timeit(f):
     def timed(*args, **kw):
         ts = time.time()
         result = f(*args, **kw)
         te = time.time()
-        print ('%s took: %2.4f sec' % \
-          (id, f.__name__, te-ts))
+        print ('func %r took: %2.4f sec' % \
+          (f.__name__, te-ts))
         return result
     return timed
 
+'''
+Fractal worker receives the IP address and port of the client,
+It begins to read in the work provided by the Client. It will
+run the respective computation based on fractal type passed in
+'''
 class FractalWorker(Worker):
     def __init__(self, address, port, conn_id=None):
         super().__init__(address, port, conn_id=conn_id)
@@ -43,27 +52,25 @@ class FractalWorker(Worker):
 
         self.close()
 
+    ''' Compute will using the parameters provided to it from the Client to compute the respective
+        Fractal based on the expression (expr) that was passed in. If the expr is in the 
+        predefined_fractals dictionary it will pass the input to it's respective computation method
+        otherwise it assumes it a custom equation
+    '''
+    @timeit
     def compute(self, expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
-
-        ts = time.time()
-
         if expr in predefined_fractals: #Standard Hard Coded Fractals
             fractal_compute_function = predefined_fractals[expr]
             data = fractal_compute_function(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end, data=None)
-            results =  data
+            return data
         else:
-            r1 = np.linspace(ymin, ymax, end - start, dtype=np.floa)
-            r2 = np.linspace(xmin, xmax, img_width, dtype=np.int32)
+            r1 = np.linspace(ymin, ymax, end - start, dtype=np.float64)
+            r2 = np.linspace(xmin, xmax, img_width, dtype=np.float64)
             n3 = np.ndarray((end - start, img_width))
             fractal_compute_function = gen(gen_with_escape_cond(create_function(expr), max_itr))
             fractal_compute_function(r1, r2, max_itr, n3)
-            results = n3
+            return n3
 
-        te = time.time()
-        print ('%s took: %2.4f sec' % (self, te-ts))
-        return results
-
-        #return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
 
     def close(self, status: WorkerStatus, msg=""):
         print("Worker closed:", status, msg)
@@ -94,17 +101,21 @@ class FractalWorker(Worker):
             self.set_status(WorkerStatus.WORKING)
             args = pickle.loads(data)
             results = self.compute(*args)
-            print(results)
             if results is None:
                 self.write(StaticMessage(MessageType.FAIL).as_bytes())
             else:
                 self.write(RSLTMessage(results, args[-2], args[-1]).as_bytes())
-
             self.set_status(WorkerStatus.AVAILABLE)
 
     def on_read_rslt(self, data):
         pass
 
+'''
+Bad Worker is used to test the how the system handles 
+worker-related failures at different points in the system.
+Using a random number (between 1 and 5) to provide a probability of the work
+failing/closing in the middle of the computation.
+'''
 class BadWorker(FractalWorker):
     def __init__(self, address, port, conn_id=None, force_terminate=False):
         super().__init__(address, port, conn_id=None)
