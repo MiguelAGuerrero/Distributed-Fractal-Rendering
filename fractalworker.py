@@ -6,13 +6,18 @@ from msg import *
 import pickle
 import random
 import sys
-
+import numpy as np
 times = []
 
 predefined_fractals = {
       FractalType.MANDELBROT.value  : mandelbrot_set2
     , FractalType.JULIA.value     : None}
 
+'''
+    Decorator function that wrapper around other functions 
+    and returns a time. Mostly used to easily see
+     bottlenecks that exist in the fractal computation code
+'''
 def timeit(f):
     def timed(*args, **kw):
         ts = time.time()
@@ -47,6 +52,11 @@ class FractalWorker(Worker):
 
         self.close()
 
+    ''' Compute will using the parameters provided to it from the Client to compute the respective
+        Fractal based on the expression (expr) that was passed in. If the expr is in the 
+        predefined_fractals dictionary it will pass the input to it's respective computation method
+        otherwise it assumes it a custom equation
+    '''
     @timeit
     def compute(self, expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
         if expr in predefined_fractals: #Standard Hard Coded Fractals

@@ -4,6 +4,9 @@ from clientworker import ClientWorker
 from worker import WorkerStatus
 
 
+'''
+    HL Aggregaing Cxns and Distr Work    
+'''
 class WorkManager(threading.Thread):
     def __init__(self, client):
         super().__init__()
@@ -26,6 +29,7 @@ class WorkManager(threading.Thread):
         self._add_connection(self.ids, worker)
         return worker
 
+    '''workers_available doc'''
     def workers_available(self):
         count = 0
         for conn_id in self.workers:
@@ -33,6 +37,7 @@ class WorkManager(threading.Thread):
                 count += 1
         return count
 
+    '''distribute_work doc'''
     def distribute_work(self, distribution_func, expr, *args):
         avail = self.get_available_workers()
         client_args = [expr, *distribution_func(0, len(avail) + 1, *args)]
@@ -45,7 +50,7 @@ class WorkManager(threading.Thread):
             print("Client REQ:", worker, distributed_args)
 
         return Task(avail, distribution_func, distributed_args), client_args
-
+    '''get_available_worker doc'''
     def get_available_workers(self):
         return [worker for worker in self.get_workers() if worker.get_status() == WorkerStatus.AVAILABLE]
 
@@ -60,6 +65,7 @@ class WorkManager(threading.Thread):
         while not done:
             worker = self.accept_connection()
 
+    '''purge doc'''
     def purge(self):
         for id in self.workers:
             worker = self.workers[id]
@@ -73,6 +79,13 @@ class WorkManager(threading.Thread):
     def redistribute_work(self, task):
         pass
 
+'''
+    A class that represents the status of workers overall
+    so the Client would not have to know how to check 
+    the status of workers and it provide useful methods 
+    like waiting so its not providing continual and 
+    uneccessary updates
+'''
 class Task:
     def __init__(self, workers, function, args):
         self.workers = workers
