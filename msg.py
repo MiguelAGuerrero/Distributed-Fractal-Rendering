@@ -68,7 +68,6 @@ class RSLTMessage(Message):
     def as_bytes(self):
         payload = self.data.tostring()
         rows = self.data.shape[0]
-        print("data len as msg sees it:", len(payload) + 16)
         columns = self.data.shape[1]
 
         return b"".join([self.type.value.encode("ascii"),

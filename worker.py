@@ -79,7 +79,13 @@ class Worker(ABC, threading.Thread):
 
         except timeout as te:
             pass
-
+        except ConnectionResetError as cre:
+            if self.get_status() is WorkerStatus.WORKING:
+                self.close(WorkerStatus.FAILED, "connection closed while working")
+            elif self.get_status() is WorkerStatus.AVAILABLE:
+                self.close(WorkerStatus.DONE, "connection closed")
+        except:
+            self.close(WorkerStatus.DONE, "unexpected connection error occured")
         if not data:
             return None
 
@@ -87,6 +93,8 @@ class Worker(ABC, threading.Thread):
     def write(self, data):
         try:
             self.sock.sendall(data)
+        except ConnectionResetError as cre:
+            self.close(WorkerStatus.FAILED, "connection closed")
         except:
             self.close(WorkerStatus.FAILED, "write error")
 
