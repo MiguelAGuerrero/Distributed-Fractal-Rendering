@@ -84,7 +84,8 @@ class Worker(ABC, threading.Thread):
                 self.close(WorkerStatus.FAILED, "connection closed while working")
             elif self.get_status() is WorkerStatus.AVAILABLE:
                 self.close(WorkerStatus.DONE, "connection closed")
-        except:
+        except Exception as e:
+            print(e)
             self.close(WorkerStatus.DONE, "unexpected connection error occured")
         if not data:
             return None

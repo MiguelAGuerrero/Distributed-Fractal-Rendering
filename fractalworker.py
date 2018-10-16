@@ -1,7 +1,7 @@
 from worker import WorkerStatus, Worker
 import time
 from usrtofrac import create_function, gen_with_escape_cond, gen
-from fractal import FractalType, mandelbrot_set, mandelbrot_set2
+from fractal import FractalType, mandelbrot_set2
 from msg import *
 import pickle
 import random
@@ -11,8 +11,7 @@ times = []
 
 predefined_fractals = {
       FractalType.MANDELBROT.value  : mandelbrot_set2
-    , FractalType.JULIA.value     : None
-}
+    , FractalType.JULIA.value     : None}
 
 def timeit(f):
     def timed(*args, **kw):
@@ -24,6 +23,11 @@ def timeit(f):
         return result
     return timed
 
+'''
+Fractal worker receives the IP address and port of the client,
+It begins to read in the work provided by the Client. It will
+run the respective computation based on fractal type passed in
+'''
 class FractalWorker(Worker):
     def __init__(self, address, port, conn_id=None):
         super().__init__(address, port, conn_id=conn_id)
@@ -45,7 +49,6 @@ class FractalWorker(Worker):
 
     @timeit
     def compute(self, expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
-
         if expr in predefined_fractals: #Standard Hard Coded Fractals
             fractal_compute_function = predefined_fractals[expr]
             data = fractal_compute_function(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end, data=None)
@@ -58,7 +61,6 @@ class FractalWorker(Worker):
             fractal_compute_function(r1, r2, max_itr, n3)
             return n3
 
-        #return mandelbrot_set2(xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
 
     def close(self, status: WorkerStatus, msg=""):
         print("Worker closed:", status, msg)
@@ -98,6 +100,12 @@ class FractalWorker(Worker):
     def on_read_rslt(self, data):
         pass
 
+'''
+Bad Worker is used to test the how the system handles 
+worker-related failures at different points in the system.
+Using a random number (between 1 and 5) to provide a probability of the work
+failing/closing in the middle of the computation.
+'''
 class BadWorker(FractalWorker):
     def __init__(self, address, port, conn_id=None, force_terminate=False):
         super().__init__(address, port, conn_id=None)
@@ -115,7 +123,7 @@ if __name__ == '__main__':
     if len(sys.argv) == 4:
         num = int(sys.argv[3])
         for i in range(num):
-            worker = BadWorker(address=sys.argv[1], port=int(sys.argv[2]))
+            worker = FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))
             worker.start()
     else:
         bw = BadWorker(address=sys.argv[1], port=int(sys.argv[2]), force_terminate=True)
