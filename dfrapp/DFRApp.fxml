@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.text.*?>
+<?import javafx.scene.canvas.*?>
+<?import java.lang.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/8" xmlns:fx="http://javafx.com/fxml/1" fx:controller="dfrapp.Controller">
+   <children>
+      <MenuBar prefHeight="25.0" prefWidth="940.0">
+        <menus>
+          <Menu mnemonicParsing="false" text="File">
+            <items>
+              <MenuItem fx:id="menuClose" mnemonicParsing="false" onAction="#close" text="Close" />
+                  <MenuItem fx:id="menuSave" mnemonicParsing="false" onAction="#save" text="Save" />
+            </items>
+          </Menu>
+          <Menu mnemonicParsing="false" text="Edit">
+            <items>
+              <MenuItem fx:id="clear" mnemonicParsing="false" onAction="#clear" text="Clear Image" />
+            </items>
+          </Menu>
+        </menus>
+      </MenuBar>
+      <BorderPane layoutY="14.0">
+         <center>
+            <Canvas fx:id="canvas" height="359.0" width="438.0" BorderPane.alignment="CENTER">
+               <BorderPane.margin>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </BorderPane.margin>
+            </Canvas>
+         </center>
+         <top>
+            <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Distributed Fractal Rendering" textAlignment="CENTER" wrappingWidth="354.6640625" BorderPane.alignment="CENTER">
+               <font>
+                  <Font size="25.0" />
+               </font>
+            </Text>
+         </top>
+         <left>
+            <GridPane hgap="10.0" prefHeight="312.0" prefWidth="220.0" vgap="10.0" BorderPane.alignment="CENTER">
+              <columnConstraints>
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="95.0" minWidth="10.0" prefWidth="68.0" />
+                <ColumnConstraints hgrow="SOMETIMES" maxWidth="143.0" minWidth="10.0" prefWidth="70.0" />
+                  <ColumnConstraints hgrow="SOMETIMES" maxWidth="85.0" minWidth="10.0" prefWidth="57.0" />
+              </columnConstraints>
+              <rowConstraints>
+                  <RowConstraints maxHeight="86.0" minHeight="10.0" prefHeight="43.0" vgrow="SOMETIMES" />
+                  <RowConstraints maxHeight="38.0" minHeight="0.0" prefHeight="27.0" vgrow="SOMETIMES" />
+                <RowConstraints maxHeight="82.0" minHeight="10.0" prefHeight="37.0" vgrow="SOMETIMES" />
+                  <RowConstraints maxHeight="58.0" minHeight="0.0" prefHeight="22.0" vgrow="SOMETIMES" />
+                <RowConstraints maxHeight="76.0" minHeight="0.0" prefHeight="37.0" vgrow="SOMETIMES" />
+                  <RowConstraints maxHeight="83.0" minHeight="0.0" prefHeight="21.0" vgrow="SOMETIMES" />
+                <RowConstraints maxHeight="78.0" minHeight="9.0" prefHeight="42.0" vgrow="SOMETIMES" />
+                  <RowConstraints maxHeight="117.0" minHeight="10.0" prefHeight="45.0" vgrow="SOMETIMES" />
+                  <RowConstraints maxHeight="117.0" minHeight="10.0" prefHeight="48.0" vgrow="SOMETIMES" />
+                  <RowConstraints maxHeight="117.0" minHeight="10.0" prefHeight="30.0" vgrow="SOMETIMES" />
+                  <RowConstraints maxHeight="117.0" minHeight="10.0" prefHeight="31.0" vgrow="SOMETIMES" />
+                  <RowConstraints maxHeight="117.0" minHeight="10.0" prefHeight="65.0" vgrow="SOMETIMES" />
+              </rowConstraints>
+               <children>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="X" textAlignment="CENTER" GridPane.rowIndex="1" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Y" GridPane.rowIndex="3" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Dimensions" GridPane.rowIndex="5" />
+                  <TextField id="xMin" GridPane.columnIndex="1" GridPane.rowIndex="2" fx:id="xMin" />
+                  <TextField id="yMin" fx:id="yMin" GridPane.columnIndex="1" GridPane.rowIndex="4" />
+                  <TextField id="imageWidth" fx:id="imageWidth" GridPane.columnIndex="1" GridPane.rowIndex="6" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Parameters" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Arguments" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.halignment="CENTER" GridPane.valignment="CENTER" />
+                  <TextField id="xMax" GridPane.columnIndex="2" GridPane.rowIndex="2" fx:id="xMax" />
+                  <TextField id="yMax" fx:id="yMax" GridPane.columnIndex="2" GridPane.rowIndex="4" />
+                  <TextField id="imageHeight" fx:id="imageHeight" GridPane.columnIndex="2" GridPane.rowIndex="6" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Min" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Max" GridPane.columnIndex="2" GridPane.rowIndex="1" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Min" GridPane.columnIndex="1" GridPane.rowIndex="3" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Max" GridPane.columnIndex="2" GridPane.rowIndex="3" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Width" GridPane.columnIndex="1" GridPane.rowIndex="5" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Height" GridPane.columnIndex="2" GridPane.rowIndex="5" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Iterations" GridPane.rowIndex="7" />
+                  <TextField id="iterations" fx:id="iterations" GridPane.columnIndex="1" GridPane.rowIndex="7" />
+                  <Button id="render" fx:id="ender" mnemonicParsing="false" onAction="#render" prefHeight="25.0" prefWidth="247.0" text="Render" GridPane.columnSpan="3" GridPane.rowIndex="11" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Fractal" GridPane.rowIndex="8" />
+                  <ComboBox id="fractal" fx:id="fractal" editable="true" prefWidth="150.0" promptText="Type" visibleRowCount="3" GridPane.columnIndex="1" GridPane.columnSpan="2" GridPane.rowIndex="8" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="R" textAlignment="CENTER" wrappingWidth="70.177734375" GridPane.rowIndex="9" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="G" textAlignment="CENTER" wrappingWidth="73.232421875" GridPane.columnIndex="1" GridPane.rowIndex="9" />
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="B" textAlignment="CENTER" wrappingWidth="56.87890625" GridPane.columnIndex="2" GridPane.rowIndex="9" />
+                  <TextField fx:id="red" text="100" GridPane.rowIndex="10" />
+                  <TextField fx:id="green" text="100" GridPane.columnIndex="1" GridPane.rowIndex="10" />
+                  <TextField fx:id="blue" text="100" GridPane.columnIndex="2" GridPane.rowIndex="10" />
+               </children>
+            </GridPane>
+         </left>
+         <bottom>
+            <BorderPane prefHeight="92.0" prefWidth="600.0" BorderPane.alignment="CENTER">
+               <center>
+                  <TextArea fx:id="messages" editable="false" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+               </center>
+               <top>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Messages" BorderPane.alignment="CENTER" />
+               </top>
+            </BorderPane>
+         </bottom>
+         <right>
+            <BorderPane prefHeight="359.0" prefWidth="222.0" BorderPane.alignment="CENTER">
+               <top>
+                  <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Workers" BorderPane.alignment="CENTER" />
+               </top>
+               <padding>
+                  <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+               </padding>
+               <left>
+                  <TextArea fx:id="workers" editable="false" prefHeight="200.0" prefWidth="200.0" BorderPane.alignment="CENTER" />
+               </left>
+            </BorderPane>
+         </right>
+         <padding>
+            <Insets bottom="20.0" left="20.0" right="20.0" top="20.0" />
+         </padding>
+      </BorderPane>
+   </children>
+</AnchorPane>
