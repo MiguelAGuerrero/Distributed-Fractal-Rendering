@@ -21,12 +21,12 @@ def partition_horizontally(i, avail_workers, xmin, xmax, ymin, ymax, width, heig
 
     return args
 
-class Client(threading.Thread):
+class Client():
     def __init__(self, address, port):
         self.address = address
         self.port = port
         self.manager = WorkManager(self)
-        self.img_width = 100;
+        self.img_width = 500;
         self.img_height = 3 * self.img_width // 4;
         self.maxiter = 256
         self.canvas = NUMPCanvas(self.img_width, self.img_height)
@@ -41,25 +41,7 @@ class Client(threading.Thread):
         self.canvas = canvas
 
     def smarter_task_handling(self):
-        work_done = False
-        # Naive approach: Just compute the fractal over and over again until a complete image is formed
-        # A better approach would be to subdivided the missing sections among available workers
-        # instead of computing the same results over again
-        while not work_done:
-            args = [self.xmin, self.xmax, self.ymin, self.ymax, self.img_width, self.img_height, self.maxiter, 0, self.img_height]
-            task = self.manager.distribute_work(partition_horizontally, self.get_fractal_expr(), *args)
-            task.wait()
-            print("Done waiting for task")
-            status = task.get_task_status()
-            if status is WorkerStatus.FAILED:
-                if self.manager.workers_available():
-                    print("Tasked failed: redistibuting work")
-                else:
-                    print("Task failed: no more workers. Client now rendering...")
-                    self.self_compute_fractal()
-                    work_done = True
-            else:
-                work_done = True
+        pass #Do not recompute the entire fractal. Save the already computed results
 
     def naive_task_handling(self):
         work_done = False

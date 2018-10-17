@@ -5,6 +5,28 @@ import sys
 
 from abc import ABC
 
+
+
+'''
+The msg module contains functions and classes that help in generating messages for DFR's protocol
+Messages have been organized as STATIC and DYNAMIC. Static messages do not have any data asscoiated
+with them. Dynamic messages, conversely, do have data.
+
+Currently, the static messages are:
+    CONN,   
+    CLSE,
+    AVAL, 
+    ACPT, 
+    RJCT, 
+    FAIL
+    
+In addtion, the dynamic messages are:
+    RSLT
+    WORK
+    
+There is also a CNFG message, but this message comes from the Java GUI, and so there is 
+currently no place where code to handle it can be reused.
+'''
 class MessageType(Enum):
     def _generate_next_value_(self, start, count, last_values):
         return self
@@ -12,14 +34,11 @@ class MessageType(Enum):
     WORK = auto()
     CONN = auto()
     CLSE = auto()
-    AVAL = auto()
-    ACPT = auto()
-    RJCT = auto()
     RSLT = auto()
     FAIL = auto()
 
 
-static_msgs = [msg.value for msg in [MessageType.CONN, MessageType.CLSE, MessageType.AVAL, MessageType.ACPT, MessageType.RJCT, MessageType.FAIL]]
+static_msgs = [msg.value for msg in [MessageType.CONN, MessageType.CLSE, MessageType.FAIL]]
 dynamic_msgs = [msg.value for msg in {MessageType.WORK, MessageType.RSLT}]
 
 def msg(type, data=None):

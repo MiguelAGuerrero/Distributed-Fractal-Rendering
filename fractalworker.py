@@ -10,8 +10,9 @@ import numpy as np
 times = []
 
 predefined_fractals = {
-      FractalType.MANDELBROT.value  : mandelbrot_set2
-    , FractalType.JULIA.value     : None}
+      FractalType.MANDELBROT.value  : mandelbrot_set2} #Expand this as needed when
+                                                       #more fractals are introduced
+                                                       #into DFR
 
 '''
     Decorator function that wrapper around other functions 
@@ -50,7 +51,11 @@ class FractalWorker(Worker):
         while self.get_status() is not WorkerStatus.DONE:
             self.read()
 
-        self.close()
+        try:
+            self.sock.close()
+        except:
+            pass #Maybe the socket got closed already due to an
+                 #Invocation to close()
 
     ''' Compute will using the parameters provided to it from the Client to compute the respective
         Fractal based on the expression (expr) that was passed in. If the expr is in the 
@@ -71,31 +76,26 @@ class FractalWorker(Worker):
             fractal_compute_function(r1, r2, max_itr, n3)
             return n3
 
-
     def close(self, status: WorkerStatus, msg=""):
-        print("Worker closed:", status, msg)
+        print("{} closed with status {}:".format(self.__str__(), status.value),  msg)
         self.sock.close()
+
+        #Set to done to get out of while loop
+        self.set_status(WorkerStatus.DONE)
+
+    ## Due to the Worker abtract methods, there are a lot
+    ## of methods that fractalworker does not need
+    ## There may be a cleaner way to do this, but it
+    ## works so far
 
     def on_read_clse(self):
         self.close(WorkerStatus.DONE, msg="Received closed message")
 
-    def on_read_acpt(self):
-        pass
-
-    def on_read_rjct(self):
-        pass
-
     def on_read_conn(self):
-        pass
+        self.set_status(WorkerStatus.AVAILABLE)
 
     def on_read_fail(self):
         pass
-
-    def on_read_aval(self):
-        if self.get_status() is WorkerStatus.AVAILABLE:
-            self.write(StaticMessage(MessageType.ACPT).as_bytes())
-        else:
-            self.write(StaticMessage(MessageType.RJCT).as_bytes())
 
     def on_read_work(self, data):
             self.set_status(WorkerStatus.WORKING)
@@ -110,33 +110,17 @@ class FractalWorker(Worker):
     def on_read_rslt(self, data):
         pass
 
-'''
-Bad Worker is used to test the how the system handles 
-worker-related failures at different points in the system.
-Using a random number (between 1 and 5) to provide a probability of the work
-failing/closing in the middle of the computation.
-'''
-class BadWorker(FractalWorker):
-    def __init__(self, address, port, conn_id=None, force_terminate=False):
-        super().__init__(address, port, conn_id=None)
-        self.rand = random.Random()
-        self.force_terminate = force_terminate
-
-    def compute(self, expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end):
-        terminate = True if self.rand.randint(1, 5) == 1 else False
-        if self.force_terminate or terminate:
-            return None
-        else:
-            return super().compute(expr, xmin, xmax, ymin, ymax, img_width, img_height, max_itr, start, end)
-
 if __name__ == '__main__':
+
+    #Creates a number of workers from one computer if provided a
+    #third cmd arg
     if len(sys.argv) == 4:
         num = int(sys.argv[3])
         for i in range(num):
             worker = FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))
             worker.start()
+
+    #Otherwise just create one
     else:
-        bw = BadWorker(address=sys.argv[1], port=int(sys.argv[2]), force_terminate=True)
-        bw.start()
         fw = FractalWorker(address=sys.argv[1], port=int(sys.argv[2]))
         fw.start()

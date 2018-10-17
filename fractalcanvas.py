@@ -1,10 +1,9 @@
 from abc import ABC, abstractmethod
 
 '''
-    Module that fractal workers use to access computational predefined fractals
-    this design choice was made when we realized that function pointers are 
-    tricky and to avoid security issue that arise from using eval
-    (eval is evil)
+FractalCanvas is an interface for where clients can store the results of the fractal computation
+as well as display them. Because there are many ways to store and display pixels, it is ideal
+to abstract away the implementation under an interface.
 '''
 class FractalCanvas(ABC):
     def __init__(self, width, height):

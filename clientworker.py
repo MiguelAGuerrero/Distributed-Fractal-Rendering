@@ -4,6 +4,12 @@ import numpy as np
 from msg import *
 
 
+'''
+ClientWorker is responsible for listening to FractalWorkers. Everytime a FractalWorker connects to the 
+client's WorkManager, a ClientWorker is created and ran in its own thread. ClientWorkers will take results
+and put them onto the canvas that the client is configured to. This is so that the client does not
+block it's own thread to put results onto the canvas. 
+'''
 class ClientWorker(Worker):
     def __init__(self, client, sock, conn_id=None):
         super().__init__(None, None, conn_id=conn_id)
@@ -29,24 +35,17 @@ class ClientWorker(Worker):
         except:
             pass
 
-        self.set_status(state)
+        print("{} closed with status {}:".format(self.__str__(), state.value),  msg)
+
+        #Set self to done to escape while loop in
+        #run()
+        self.set_status(WorkerStatus.DONE)
 
     def on_read_clse(self):
         self.close(WorkerStatus.DONE, msg="Worker closed connection")
 
-    def on_read_acpt(self):
-        print(self, "available")
-        self.set_status(WorkerStatus.AVAILABLE)
-
-    def on_read_rjct(self):
-        print(self, "not available")
-        self.set_status(WorkerStatus.UNAVAILABLE)
-
     def on_read_conn(self):
-        pass
-
-    def on_read_aval(self):
-        pass
+        self.set_status(WorkerStatus.AVAILABLE)
 
     def on_read_work(self, data):
         pass
@@ -70,4 +69,5 @@ class ClientWorker(Worker):
         while not self.get_status() is WorkerStatus.DONE:
             self.read()
             if self.get_status() is WorkerStatus.FAILED:
-                    pass
+                    pass #Wait until a manager checks for the failure
+

@@ -5,7 +5,13 @@ from worker import WorkerStatus
 
 
 '''
-    HL Aggregaing Cxns and Distr Work    
+workmanager contains the WorkManager class, which is responsible for listening to any potential FractalWorkers
+from other computers. WorkManager, as it is, aggregates connections and is able to know the statuses
+of the workers. In addition, WorkManagers are able to distribute works to connected workers, as well as provide
+arguments for the client so that it may render itself.
+
+Each client instance should have a WorkerManager, as it how the distributed system can be developed for the 
+DFR application   
 '''
 class WorkManager(threading.Thread):
     def __init__(self, client):
@@ -17,19 +23,19 @@ class WorkManager(threading.Thread):
         self.start()
 
     def _make_server_socket(self):
-        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.socket.bind((self.client.address, self.client.port))
-        self.socket.listen(16)
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sock.bind((self.client.address, self.client.port))
+        self.sock.listen(16)
+        self.sock.settimeout(1)
 
     def accept_connection(self):
         self.ids = self.ids + 1
-        conn, addr = self.socket.accept()
+        conn, addr = self.sock.accept()
         worker = ClientWorker(self.client, conn, conn_id=self.ids)
         print('Connected to Worker:', worker)
         self._add_connection(self.ids, worker)
         return worker
 
-    '''workers_available doc'''
     def workers_available(self):
         count = 0
         for conn_id in self.workers:
@@ -37,7 +43,12 @@ class WorkManager(threading.Thread):
                 count += 1
         return count
 
-    '''distribute_work doc'''
+    '''
+        Determines how to split a fractal computation by adjusting the arguments for a fractal 
+         function's paraemeters. The split is even, so all workers have an equal amount of work to perform.
+         The Manager adjusts for one worker more than the amount of available workers because the client
+         should be able to perform work.
+    '''
     def distribute_work(self, distribution_func, expr, *args):
         avail = self.get_available_workers()
         client_args = [expr, *distribution_func(0, len(avail) + 1, *args)]
@@ -47,12 +58,18 @@ class WorkManager(threading.Thread):
 
             worker.submit_work(distributed_args)
 
-            print("Client REQ:", worker, distributed_args)
+            print("Distribution:", worker, distributed_args)
 
         return Task(avail, distribution_func, distributed_args), client_args
-    '''get_available_worker doc'''
+
+
     def get_available_workers(self):
-        return [worker for worker in self.get_workers() if worker.get_status() == WorkerStatus.AVAILABLE]
+        #Client workers that have failed are considered available. It is assumed that
+        #that the failure has been recognized because of the control flow of the program
+        for worker in self.get_workers():
+            if worker.get_status() is WorkerStatus.FAILED:
+                worker.set_status(WorkerStatus.AVAILABLE)
+        return [worker for worker in self.get_workers() if worker.get_status() is WorkerStatus.AVAILABLE]
 
     def _add_connection(self, conn_id, worker):
         self.workers[conn_id] = worker
@@ -63,17 +80,19 @@ class WorkManager(threading.Thread):
     def run(self):
         done = False
         while not done:
-            worker = self.accept_connection()
+            try:
+                worker = self.accept_connection()
+            except:
+                pass
+            self.purge_dead_workers()
 
-    '''purge doc'''
-    def purge(self):
-        for id in self.workers:
+    def purge_dead_workers(self):
+        for id in list(self.workers.keys()):
             worker = self.workers[id]
-            worker.close(WorkerStatus.DONE, "Client forced disconnection")
-            del self.workers[id]
+            if worker and worker.get_status() is WorkerStatus.DONE:
+                self._remove_connection(id)
 
     def get_workers(self):
-        print(self.workers.values())
         return self.workers.values()
 
     def redistribute_work(self, task):
@@ -83,8 +102,12 @@ class WorkManager(threading.Thread):
     A class that represents the status of workers overall
     so the Client would not have to know how to check 
     the status of workers and it provide useful methods 
-    like waiting so its not providing continual and 
-    uneccessary updates
+    like waiting for the task to finish or breaking 
+    upon a failure in the task.
+    
+    The main difference between Task and WorkManager is that
+    Task refers to only a subset of workers that WorkManager has, and
+    only performs checks and waits on those workers only.
 '''
 class Task:
     def __init__(self, workers, function, args):

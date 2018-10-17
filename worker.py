@@ -1,17 +1,21 @@
 import threading
-from socket import socket, SOCK_STREAM, AF_INET, timeout
+from socket import SOCK_STREAM, AF_INET, timeout
+import socket
 from abc import ABC, abstractmethod
-from enum import Enum
+from enum import Enum, auto
 import sys
-from msg import MessageType, static_msgs
+from msg import MessageType, static_msgs, StaticMessage
 
 class WorkerStatus(Enum):
-    FAILED = -1
-    WORKING = 1
-    AVAILABLE = 0
-    WORK_READY = 2
-    DONE = 3
-    UNAVAILABLE = 4
+    def _generate_next_value_(self, start, count, last_values):
+        return self
+
+    FAILED = auto()
+    WORKING = auto()
+    AVAILABLE = auto()
+    WORK_READY = auto()
+    DONE = auto()
+    UNAVAILABLE = auto()
 
 class Worker(ABC, threading.Thread):
     def __init__(self, address, port, conn_id=None):
@@ -23,14 +27,16 @@ class Worker(ABC, threading.Thread):
             MessageType.CONN.value: self.on_read_conn
         ,   MessageType.CLSE.value: self.on_read_clse
         ,   MessageType.RSLT.value: self.on_read_rslt
-        ,   MessageType.RJCT.value: self.on_read_rjct
         ,   MessageType.WORK.value: self.on_read_work
-        ,   MessageType.AVAL.value: self.on_read_aval
         ,   MessageType.FAIL.value: self.on_read_fail}
         self.conn_id = conn_id
+        self.host = socket.gethostbyname(socket.gethostname())
 
     def __str__(self):
-        return self.__class__.__name__ + str(self.conn_id)
+        return "Worker ({})".format(self.host)
+
+    def get_host(self):
+        return self.host
 
     def set_status(self, status: WorkerStatus):
         self.status = status
@@ -39,12 +45,13 @@ class Worker(ABC, threading.Thread):
         return self.status
 
     def connect(self):
-        self.sock = socket(AF_INET, SOCK_STREAM)
+        self.sock = socket.socket(AF_INET, SOCK_STREAM)
         addr = self.address, self.port
         self.sock.settimeout(1)
         self.sock.connect(addr)
-        #self.sock.sendall(StaticMessage(MessageType.CONN).as_bytes())
 
+        #Send CONN message
+        self.sock.sendall(StaticMessage(MessageType.CONN).as_bytes())
 
     #TODO: Deal with ConnectionResetError
     def read(self):
@@ -75,7 +82,7 @@ class Worker(ABC, threading.Thread):
             pass
         except ConnectionResetError as cre:
             if self.get_status() is WorkerStatus.WORKING:
-                self.close(WorkerStatus.FAILED, "connection closed while working")
+                self.close(WorkerStatus.DONE, "connection closed while working")
             elif self.get_status() is WorkerStatus.AVAILABLE:
                 self.close(WorkerStatus.DONE, "connection closed")
         except Exception as e:
@@ -89,28 +96,16 @@ class Worker(ABC, threading.Thread):
         try:
             self.sock.sendall(data)
         except ConnectionResetError as cre:
-            self.close(WorkerStatus.FAILED, "connection closed")
+            self.close(WorkerStatus.DONE, "connection closed")
         except:
-            self.close(WorkerStatus.FAILED, "write error")
+            self.close(WorkerStatus.DONE, "write error")
 
     @abstractmethod
     def on_read_clse(self):
         pass
 
     @abstractmethod
-    def on_read_acpt(self):
-        pass
-
-    @abstractmethod
-    def on_read_rjct(self):
-        pass
-
-    @abstractmethod
     def on_read_conn(self):
-        pass
-
-    @abstractmethod
-    def on_read_aval(self):
         pass
 
     @abstractmethod
@@ -125,17 +120,9 @@ class Worker(ABC, threading.Thread):
         pass
 
     @abstractmethod
-    def validate_data(self, data):
-        pass
-
-    @abstractmethod
     def run(self):
         pass
 
     @abstractmethod
     def close(self, status: WorkerStatus, msg=None):
         pass
-
-
-if __name__ == '__main__':
-    w = Worker(IP='127.0.0.1', port=1000)

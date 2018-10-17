@@ -3,6 +3,14 @@ import numpy as np
 from numba import complex128, int32, vectorize
 from enum import Enum, auto
 
+
+'''
+    Module that fractal workers use to access computational predefined fractals
+    this design choice was made when we realized that function pointers are 
+    tricky and to avoid security issue that arise from using eval
+    (eval is evil)
+'''
+
 '''
     Create FractalType Enumerations to use the respective computations 
     based on the Enumeration given by the Client.
